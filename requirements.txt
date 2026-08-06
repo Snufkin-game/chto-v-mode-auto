@@ -1,0 +1,4 @@
+python-telegram-bot[job-queue]==21.9
+anthropic>=0.40.0
+feedparser>=6.0.11
+pytz>=2024.1
