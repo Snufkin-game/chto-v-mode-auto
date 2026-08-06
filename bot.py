@@ -687,6 +687,37 @@ def post_link(sent) -> str:
     return f"https://t.me/c/{cid}/{msg.message_id}"
 
 
+def keyboard(draft_id: str, slot: str) -> InlineKeyboardMarkup:
+    t = slot_time(slot)
+    day = "завтра" if t.date() > datetime.now(TIMEZONE).date() else "сегодня"
+    rows = [[InlineKeyboardButton(f"🕒 Поставить на {t:%H:%M} ({day})",
+                                  callback_data=f"plan:{draft_id}")],
+            [InlineKeyboardButton("✅ Опубликовать сейчас", callback_data=f"pub:{draft_id}")]]
+    if slot == "opinion":
+        rows.append([InlineKeyboardButton("📊 Сейчас, с опросом",
+                                          callback_data=f"poll:{draft_id}")])
+    rows.append([InlineKeyboardButton("🔄 Другой вариант", callback_data=f"redo:{draft_id}"),
+                 InlineKeyboardButton("❌ Пропустить", callback_data=f"skip:{draft_id}")])
+    return InlineKeyboardMarkup(rows)
+
+
+async def show_draft(bot, draft_id: str):
+    """Показывает черновик и отдельным сообщением — кнопки."""
+    d = drafts[draft_id]
+    sent = await send_content(bot, OWNER_ID, d["text"], d["images"])
+    ids = [m.message_id for m in sent] if isinstance(sent, (list, tuple)) else (
+        [sent.message_id] if sent else [])
+
+    head = f"⬆️ Черновик · {SLOT_NAMES.get(d['slot'], d['slot'])}\n"
+    if d.get("score"):
+        head += f"Актуальность: {d['score']}/10 — {d['reason']}\n"
+    head += f"🖼 картинок: {len(d['images'])}" if d["images"] else "🖼 без картинки"
+
+    control = await bot.send_message(OWNER_ID, head,
+                                     reply_markup=keyboard(draft_id, d["slot"]))
+    d["msg_ids"] = ids + [control.message_id]
+
+
 async def publish(bot, d: dict, with_poll: bool = False):
     sent = await send_content(bot, CHANNEL_ID, d["text"], d["images"])
     remember_published(d["entry"]["title"])
