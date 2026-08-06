@@ -19,8 +19,11 @@ import logging
 import secrets
 from datetime import time as dtime, datetime, timedelta
 
+import io
+
 import pytz
 import requests
+from PIL import Image
 import feedparser
 from bs4 import BeautifulSoup
 from anthropic import Anthropic
@@ -69,6 +72,7 @@ log = logging.getLogger("fashionbot")
 client = Anthropic(api_key=ANTHROPIC_API_KEY)
 drafts: dict[str, dict] = {}
 pending: dict[str, dict] = {}
+last_draft: dict[str, str] = {}
 rotation = {"i": 0}
 
 SLOT_NAMES = {"news": "новость", "trend": "тренд", "style": "образ", "opinion": "мнение"}
@@ -294,35 +298,51 @@ def page_images(url: str) -> list[str]:
     return urls
 
 
+def ahash(data: bytes) -> int | None:
+    """Отпечаток картинки 8x8 — одинаковые кадры в разных размерах дают один отпечаток."""
+    try:
+        im = Image.open(io.BytesIO(data)).convert("L").resize((8, 8), Image.LANCZOS)
+        px = list(im.getdata())
+        avg = sum(px) / len(px)
+        bits = 0
+        for i, p in enumerate(px):
+            if p > avg:
+                bits |= 1 << i
+        return bits
+    except Exception:
+        return None
+
+
 def verify_images(urls, want: int = 6, log_to: list | None = None) -> list[str]:
-    """Оставляет настоящие картинки. Неизвестный размер — не повод выбрасывать."""
-    ok = []
+    """Оставляет настоящие непохожие картинки."""
+    ok, prints = [], []
     for u in urls[:16]:
         verdict = ""
         try:
-            ctype, size = "", 0
-            try:
-                r = requests.head(u, timeout=8, allow_redirects=True, headers=UA)
-                ctype = (r.headers.get("content-type") or "").lower()
-                size = int(r.headers.get("content-length") or 0)
-            except Exception:
-                pass
-            # размер не пришёл или HEAD не сработал — дотягиваем куском файла
-            if not ctype.startswith("image") or size == 0:
-                r = requests.get(u, timeout=10, stream=True, headers=UA)
-                ctype = (r.headers.get("content-type") or "").lower()
-                size = int(r.headers.get("content-length") or 0)
-                if size == 0:
-                    size = len(next(r.iter_content(120000), b""))
-                r.close()
+            r = requests.get(u, timeout=12, stream=True, headers=UA)
+            ctype = (r.headers.get("content-type") or "").lower()
+            data = b""
+            for chunk in r.iter_content(65536):
+                data += chunk
+                if len(data) > 3_000_000:
+                    break
+            r.close()
 
             if not ctype.startswith("image"):
                 verdict = f"не картинка ({ctype or 'нет типа'})"
-            elif size and size < 8000:
-                verdict = f"слишком мелкая ({size} б)"
+            elif len(data) < 8000:
+                verdict = f"слишком мелкая ({len(data)} б)"
             else:
-                verdict = f"ок ({size or '?'} б)"
-                ok.append(u)
+                fp = ahash(data)
+                twin = fp is not None and any(
+                    bin(fp ^ old).count("1") <= 10 for old in prints)
+                if twin:
+                    verdict = "дубль — та же картинка"
+                else:
+                    if fp is not None:
+                        prints.append(fp)
+                    ok.append(u)
+                    verdict = f"ок ({len(data)} б)"
         except Exception as e:
             verdict = f"не открылась ({type(e).__name__})"
         if log_to is not None:
@@ -559,59 +579,71 @@ def make_poll(post_text: str) -> dict | None:
 
 # ---------------------------------------------------------------- отправка
 
-async def send_content(bot, chat_id, text: str, images: list[str]):
-    """Карусель, фото или текст — с откатом, если что-то не принялось."""
-    for body, mode, imgs in ((text, ParseMode.HTML, images),
-                             (strip_tags(text), None, images),
-                             (strip_tags(text), None, [])):
+def download_images(urls, limit: int = 6) -> list:
+    """Ссылки качаем сами; file_id твоих фото отдаём телеграму как есть."""
+    out = []
+    for u in urls[:limit]:
+        if isinstance(u, str) and not u.startswith("http"):
+            out.append(u)                      # это file_id уже загруженного фото
+            continue
         try:
-            if len(imgs) > 1:
-                media = [InputMediaPhoto(imgs[0], caption=body[:1024], parse_mode=mode)]
-                media += [InputMediaPhoto(u) for u in imgs[1:10]]
+            r = requests.get(u, timeout=20, headers=UA)
+            r.raise_for_status()
+            if not (r.headers.get("content-type") or "").lower().startswith("image"):
+                continue
+            if len(r.content) > 9_000_000:      # лимит телеграма 10 МБ
+                continue
+            out.append(r.content)
+        except Exception as e:
+            log.warning("картинка не скачалась (%s): %s", u[:60], e)
+    return out
+
+
+async def send_content(bot, chat_id, text: str, images: list[str]):
+    """Отправляет пост. Разметку срезает только если сломана именно она."""
+    blobs = await asyncio.to_thread(download_images, images) if images else []
+    body, mode = text, ParseMode.HTML
+
+    for _ in range(4):
+        try:
+            if len(blobs) > 1:
+                media = [InputMediaPhoto(blobs[0], caption=body[:1024], parse_mode=mode)]
+                media += [InputMediaPhoto(b) for b in blobs[1:10]]
                 return await bot.send_media_group(chat_id, media)
-            if imgs:
-                return await bot.send_photo(chat_id, imgs[0], caption=body[:1024], parse_mode=mode)
+            if blobs:
+                return await bot.send_photo(chat_id, blobs[0], caption=body[:1024],
+                                            parse_mode=mode)
             return await bot.send_message(
                 chat_id, body[:4000], parse_mode=mode,
                 link_preview_options=LinkPreviewOptions(is_disabled=True))
+
         except BadRequest as e:
-            log.warning("отправка не прошла (%s), пробую проще", e)
-            if mode is not None:
+            err = str(e).lower()
+            broken_markup = any(w in err for w in
+                                ("parse", "entit", "tag", "unsupported start"))
+            if broken_markup and mode is not None:
+                log.warning("разметка сломана: %s", e)
+                body, mode = strip_tags(text), None
                 try:
                     await bot.send_message(
-                        OWNER_ID, f"⚠️ Разметка не прошла, пост уйдёт без неё:\n{e}")
+                        OWNER_ID, f"⚠️ Разметка не прошла, пост ушёл без неё:\n{e}")
                 except Exception:
                     pass
+                continue
+
+            # проблема с картинками — выкидываем проблемную, разметку не трогаем
+            if blobs:
+                idx = re.search(r"#(\d+)", str(e))
+                if idx and len(blobs) >= int(idx.group(1)):
+                    blobs.pop(int(idx.group(1)) - 1)
+                else:
+                    blobs = blobs[:1] if len(blobs) > 1 else []
+                log.warning("проблема с картинкой (%s), осталось %s", e, len(blobs))
+                continue
+
+            log.warning("отправка не удалась: %s", e)
+            return None
     return None
-
-
-def keyboard(draft_id: str, slot: str) -> InlineKeyboardMarkup:
-    t = slot_time(slot)
-    day = "завтра" if t.date() > datetime.now(TIMEZONE).date() else "сегодня"
-    rows = [[InlineKeyboardButton(f"🕒 Поставить на {t:%H:%M} ({day})",
-                                  callback_data=f"plan:{draft_id}")],
-            [InlineKeyboardButton("✅ Опубликовать сейчас", callback_data=f"pub:{draft_id}")]]
-    if slot == "opinion":
-        rows.append([InlineKeyboardButton("📊 Сейчас, с опросом",
-                                          callback_data=f"poll:{draft_id}")])
-    rows.append([InlineKeyboardButton("🔄 Другой вариант", callback_data=f"redo:{draft_id}"),
-                 InlineKeyboardButton("❌ Пропустить", callback_data=f"skip:{draft_id}")])
-    return InlineKeyboardMarkup(rows)
-
-
-async def show_draft(bot, draft_id: str):
-    d = drafts[draft_id]
-    sent = await send_content(bot, OWNER_ID, d["text"], d["images"])
-    ids = [m.message_id for m in sent] if isinstance(sent, (list, tuple)) else (
-        [sent.message_id] if sent else [])
-
-    head = f"⬆️ Черновик · {SLOT_NAMES.get(d['slot'], d['slot'])}\n"
-    if d.get("score"):
-        head += f"Актуальность: {d['score']}/10 — {d['reason']}\n"
-    head += f"🖼 картинок: {len(d['images'])}" if d["images"] else "🖼 без картинки"
-
-    control = await bot.send_message(OWNER_ID, head, reply_markup=keyboard(draft_id, d["slot"]))
-    d["msg_ids"] = ids + [control.message_id]
 
 
 def post_link(sent) -> str:
@@ -672,7 +704,7 @@ async def build_draft(bot, slot: str) -> None:
         draft_id = secrets.token_hex(4)
         drafts[draft_id] = {"text": text, "entry": entry, "slot": slot,
                             "images": entry["images"], "score": score, "reason": reason}
-        drafts["_last"] = drafts[draft_id]
+        last_draft["id"] = draft_id
         await show_draft(bot, draft_id)
         return
 
@@ -844,6 +876,71 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text("Каким форматом сделать?",
                                         reply_markup=format_picker(token))
 
+album_buffer: dict[str, dict] = {}
+
+
+async def publish_own(bot, file_ids: list[str], caption: str, draft_id: str | None):
+    """Публикует твои фото: с твоей подписью или с текстом черновика."""
+    if draft_id and drafts.get(draft_id):
+        d = drafts[draft_id]
+        text = d["text"]
+    else:
+        text = sanitize_html(md_to_html(caption.lstrip("=").strip()))
+        if SIGNATURE and SIGNATURE not in text:
+            text = f"{text}\n\n{SIGNATURE}"
+        d = None
+
+    sent = await send_content(bot, CHANNEL_ID, text, file_ids)
+    if d:
+        remember_published(d["entry"]["title"])
+        drafts.pop(draft_id, None)
+    link = post_link(sent)
+    await bot.send_message(
+        OWNER_ID, f"✅ Опубликовано с твоими фото" + (f"\n{link}" if link else ""),
+        link_preview_options=LinkPreviewOptions(is_disabled=True))
+
+
+async def flush_album(context: ContextTypes.DEFAULT_TYPE) -> None:
+    pack = album_buffer.pop(context.job.data, None)
+    if not pack:
+        return
+    await publish_own(context.bot, pack["files"], pack["caption"], pack["draft"])
+
+
+async def on_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Фото от владельца: с подписью — новый пост, ответом на черновик — его текст."""
+    if update.effective_user.id != OWNER_ID:
+        return
+    msg = update.message
+    file_id = msg.photo[-1].file_id
+    caption = msg.caption or ""
+
+    draft_id = None
+    if msg.reply_to_message:
+        draft_id = next((k for k, v in drafts.items()
+                         if isinstance(v, dict)
+                         and msg.reply_to_message.message_id in v.get("msg_ids", [])), None)
+
+    if not caption and not draft_id:
+        await msg.reply_text(
+            "Добавь подпись к фото — она станет текстом поста.\n"
+            "Или ответь этим фото на черновик, тогда возьму его текст.")
+        return
+
+    gid = msg.media_group_id
+    if gid:                                   # альбом приходит по одному фото
+        pack = album_buffer.setdefault(gid, {"files": [], "caption": "", "draft": None})
+        pack["files"].append(file_id)
+        pack["caption"] = pack["caption"] or caption
+        pack["draft"] = pack["draft"] or draft_id
+        if len(pack["files"]) == 1:
+            context.application.job_queue.run_once(flush_album, when=4, data=gid,
+                                                   name=f"album-{gid}")
+        return
+
+    await publish_own(context.bot, [file_id], caption, draft_id)
+
+
 # ---------------------------------------------------------------- команды
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -863,7 +960,10 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/post + текст — опубликую твой текст как есть\n\n"
         "На черновик можно ответить:\n"
         "• текстом с правкой — перепишу\n"
-        "• текстом со знаком = в начале — опубликую как есть")
+        "• текстом со знаком = в начале — опубликую как есть\n"
+        "• своим фото — поставлю его к тексту черновика\n\n"
+        "Просто фото с подписью — опубликую как новый пост.\n"
+        "Альбом до 6 фото тоже понимаю.")
 
 
 async def cmd_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -903,7 +1003,7 @@ async def cmd_debug(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Показывает, что происходит с последним черновиком."""
     if update.effective_user.id != OWNER_ID:
         return
-    d = drafts.get("_last")
+    d = drafts.get(last_draft.get("id", ""))
     if not d:
         await update.message.reply_text("Черновиков ещё не было. Сделай /now.")
         return
@@ -944,6 +1044,7 @@ def main() -> None:
     app.add_handler(CommandHandler("clear", cmd_clear))
     app.add_handler(CommandHandler("debug", cmd_debug))
     app.add_handler(CallbackQueryHandler(on_button))
+    app.add_handler(MessageHandler(filters.PHOTO, on_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
 
     for i, t in enumerate(POST_TIMES):
