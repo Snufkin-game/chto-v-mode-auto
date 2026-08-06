@@ -196,6 +196,18 @@ def md_to_html(text: str) -> str:
     return "\n".join(out)
 
 
+def ensure_format(text: str) -> str:
+    """Страховка: без жирного заголовка пост не уходит."""
+    if "<b>" in text.lower():
+        return text
+    lines = text.split("\n")
+    for i, ln in enumerate(lines):
+        if ln.strip():
+            lines[i] = f"<b>{ln.strip()}</b>"
+            break
+    return "\n".join(lines)
+
+
 def sanitize_html(text: str) -> str:
     """Экранирует всё лишнее, оставляя разрешённые теги — чтобы разметка не падала."""
     parts, pos = [], 0
@@ -227,20 +239,35 @@ UA = {"User-Agent": "Mozilla/5.0 (compatible; FashionBot/1.0)"}
 
 # заглушки, пиксели, логотипы — всё, что даёт белый квадрат
 JUNK = re.compile(
-    r"(1x1|pixel|spacer|blank|placeholder|transparent|lazy|loading|"
-    r"favicon|logo|icon|avatar|sprite|badge|social|share[-_])", re.I)
+    r"(1x1|/pixel|spacer|blank\.|placeholder|transparent\.|"
+    r"favicon|logo|/icon|avatar|sprite)", re.I)
+
+
+def img_key(u: str) -> str:
+    """Ключ картинки без размеров и параметров — чтобы поймать одно фото в разных версиях."""
+    u = u.split("?")[0].split("#")[0].lower()
+    u = re.sub(r"/(?:w|h|c|q)_[^/]+", "/", u)          # /w_1600,c_limit/
+    u = re.sub(r"/\d{2,4}x\d{2,4}/", "/", u)           # /1200x800/
+    u = re.sub(r"[-_]\d{2,4}x\d{2,4}(?=\.[a-z]{3,4}$)", "", u)   # -800x600.jpg
+    u = re.sub(r"[-_](?:small|medium|large|thumb|thumbnail|scaled|crop)(?=\.)", "", u)
+    tail = [p for p in u.split("/") if p]
+    return tail[-1] if tail else u
 
 
 def dedupe_images(urls, limit: int = 24) -> list[str]:
-    out = []
+    out, keys = [], set()
     for u in urls:
         u = html.unescape((u or "").strip())
-        if not u.startswith("http") or u in out:
+        if not u.startswith("http"):
             continue
         if JUNK.search(u):
             continue
-        if u.lower().split("?")[0].endswith((".svg", ".gif", ".webp?small")):
+        if u.lower().split("?")[0].endswith((".svg", ".gif")):
             continue
+        k = img_key(u)
+        if k in keys:
+            continue
+        keys.add(k)
         out.append(u)
     return out[:limit]
 
@@ -267,25 +294,39 @@ def page_images(url: str) -> list[str]:
     return urls
 
 
-def verify_images(urls, want: int = 6) -> list[str]:
-    """Оставляет только настоящие крупные картинки — заглушки отсеиваются."""
+def verify_images(urls, want: int = 6, log_to: list | None = None) -> list[str]:
+    """Оставляет настоящие картинки. Неизвестный размер — не повод выбрасывать."""
     ok = []
     for u in urls[:16]:
+        verdict = ""
         try:
-            r = requests.head(u, timeout=8, allow_redirects=True, headers=UA)
-            ctype = (r.headers.get("content-type") or "").lower()
-            size = int(r.headers.get("content-length") or 0)
-            if r.status_code >= 400 or not ctype.startswith("image"):
-                r = requests.get(u, timeout=8, stream=True, headers=UA)
+            ctype, size = "", 0
+            try:
+                r = requests.head(u, timeout=8, allow_redirects=True, headers=UA)
                 ctype = (r.headers.get("content-type") or "").lower()
                 size = int(r.headers.get("content-length") or 0)
-                if not size:
-                    size = len(next(r.iter_content(80000), b""))
+            except Exception:
+                pass
+            # размер не пришёл или HEAD не сработал — дотягиваем куском файла
+            if not ctype.startswith("image") or size == 0:
+                r = requests.get(u, timeout=10, stream=True, headers=UA)
+                ctype = (r.headers.get("content-type") or "").lower()
+                size = int(r.headers.get("content-length") or 0)
+                if size == 0:
+                    size = len(next(r.iter_content(120000), b""))
                 r.close()
-            if ctype.startswith("image") and size >= 20000:
+
+            if not ctype.startswith("image"):
+                verdict = f"не картинка ({ctype or 'нет типа'})"
+            elif size and size < 8000:
+                verdict = f"слишком мелкая ({size} б)"
+            else:
+                verdict = f"ок ({size or '?'} б)"
                 ok.append(u)
-        except Exception:
-            continue
+        except Exception as e:
+            verdict = f"не открылась ({type(e).__name__})"
+        if log_to is not None:
+            log_to.append(f"{verdict} — {u[:70]}")
         if len(ok) >= want:
             break
     return ok
@@ -294,12 +335,22 @@ def verify_images(urls, want: int = 6) -> list[str]:
 def prepare_images(entry: dict) -> list[str]:
     """От 1 до 6 картинок: что дала лента плюс что нашлось на странице."""
     urls = list(entry.get("images") or [])
+    from_feed = len(urls)
     if len(urls) < 3 and entry.get("link"):
         try:
             urls += page_images(entry["link"])
         except Exception as e:
             log.warning("страница не открылась (%s): %s", entry.get("link"), e)
-    return verify_images(dedupe_images(urls), want=6)
+    clean_urls = dedupe_images(urls)
+    report = []
+    try:
+        found = verify_images(clean_urls, want=6, log_to=report)
+    except Exception as e:
+        log.warning("проверка картинок упала: %s", e)
+        found = clean_urls[:6]
+    entry["img_log"] = ([f"из ленты: {from_feed}, всего кандидатов: {len(clean_urls)}"]
+                        + report)
+    return found
 
 
 def source_name(feed, link: str) -> str:
@@ -428,6 +479,25 @@ def build_prompt(entry: dict, slot: str, extra: str = "") -> str:
 
 Напиши один пост.
 
+Пишешь на русском для русскоязычной аудитории. Исходник английский — это
+подстрочник, а не образец. Не переводи фразы, а рассказывай своими словами,
+как рассказала бы подруге, которая разбирается в моде.
+
+Что выдаёт машинный текст — не делай так:
+- канцелярские связки: «стоит отметить», «неудивительно, что», «именно поэтому»,
+  «в мире моды», «давайте разберёмся», «не просто X, а Y»
+- пустые оценки: «культовый», «знаковый», «иконический», «révolutionный»,
+  «поистине», «настоящий шедевр»
+- ровные одинаковые предложения подряд — чередуй короткие и длинные
+- вступление вокруг да около — начинай сразу с сути
+- дословный перевод английских оборотов и порядка слов
+
+Что делает текст живым:
+- конкретика вместо прилагательных: не «роскошный силуэт», а что именно в нём
+- прямое обращение к читателю, где уместно
+- одна разговорная связка на пост — «в общем», «короче», «и вот тут интересно»
+- своё отношение к вещи, а не пересказ пресс-релиза
+
 Жёсткие требования:
 - 500-800 знаков (лимит подписи под картинками)
 - первая строка — заголовок-крючок, оберни в <b></b>
@@ -457,7 +527,7 @@ def generate(entry: dict, slot: str, extra: str = "") -> str:
     msg = client.messages.create(model=MODEL, max_tokens=1200,
                                  messages=[{"role": "user", "content": build_prompt(entry, slot, extra)}])
     text = "".join(b.text for b in msg.content if b.type == "text").strip()
-    text = sanitize_html(md_to_html(text))
+    text = ensure_format(sanitize_html(md_to_html(text)))
     if SIGNATURE and SIGNATURE not in text:
         text = f"{text}\n\n{SIGNATURE}"
     return text
@@ -602,6 +672,7 @@ async def build_draft(bot, slot: str) -> None:
         draft_id = secrets.token_hex(4)
         drafts[draft_id] = {"text": text, "entry": entry, "slot": slot,
                             "images": entry["images"], "score": score, "reason": reason}
+        drafts["_last"] = drafts[draft_id]
         await show_draft(bot, draft_id)
         return
 
@@ -828,6 +899,24 @@ async def cmd_clear(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Очередь очищена.")
 
 
+async def cmd_debug(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Показывает, что происходит с последним черновиком."""
+    if update.effective_user.id != OWNER_ID:
+        return
+    d = drafts.get("_last")
+    if not d:
+        await update.message.reply_text("Черновиков ещё не было. Сделай /now.")
+        return
+    raw = d["text"]
+    tags = ", ".join(sorted(set(re.findall(r"</?([a-z-]+)", raw)))) or "тегов нет"
+    img_log = "\n".join(d["entry"].get("img_log", ["нет данных"])[:10])
+    body = (f"ТЕКСТ КАК ЕСТЬ:\n{raw[:1500]}\n\n"
+            f"ТЕГИ: {tags}\n"
+            f"КАРТИНОК УШЛО: {len(d['images'])}\n\n"
+            f"ЧТО С КАРТИНКАМИ:\n{img_log}")
+    await update.message.reply_text(body[:4000])
+
+
 async def cmd_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Публикует свой текст: /post и дальше текст поста."""
     if update.effective_user.id != OWNER_ID:
@@ -853,6 +942,7 @@ def main() -> None:
     app.add_handler(CommandHandler("plan", cmd_plan))
     app.add_handler(CommandHandler("queue", cmd_queue))
     app.add_handler(CommandHandler("clear", cmd_clear))
+    app.add_handler(CommandHandler("debug", cmd_debug))
     app.add_handler(CallbackQueryHandler(on_button))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
 
