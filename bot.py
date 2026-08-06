@@ -24,7 +24,8 @@ import requests
 import feedparser
 from bs4 import BeautifulSoup
 from anthropic import Anthropic
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import (Update, InlineKeyboardButton, InlineKeyboardMarkup,
+                      InputMediaPhoto, LinkPreviewOptions)
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import (
@@ -166,6 +167,46 @@ def strip_tags(text: str) -> str:
     return re.sub(r"<[^>]+>", "", text or "")
 
 
+# теги, которые понимает Telegram
+ALLOWED_TAGS = re.compile(
+    r'</?(?:b|strong|i|em|u|ins|s|strike|del|code|tg-spoiler)>'
+    r'|<blockquote(?: expandable)?>|</blockquote>'
+    r'|<a href="[^"<>]*">|</a>',
+    re.I)
+
+
+def md_to_html(text: str) -> str:
+    """Если модель всё-таки написала **жирным** или > цитатой — переводим в теги."""
+    text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text, flags=re.S)
+    text = re.sub(r"(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?![*\w])", r"<i>\1</i>", text, flags=re.S)
+    text = re.sub(r"__(.+?)__", r"<u>\1</u>", text, flags=re.S)
+
+    out, quote = [], []
+    for line in text.split("\n"):
+        m = re.match(r"^\s*&?g?t?>?\s?>\s?(.*)$", line) or re.match(r"^\s*>\s?(.*)$", line)
+        if m:
+            quote.append(m.group(1))
+            continue
+        if quote:
+            out.append("<blockquote>" + "\n".join(quote) + "</blockquote>")
+            quote = []
+        out.append(line)
+    if quote:
+        out.append("<blockquote>" + "\n".join(quote) + "</blockquote>")
+    return "\n".join(out)
+
+
+def sanitize_html(text: str) -> str:
+    """Экранирует всё лишнее, оставляя разрешённые теги — чтобы разметка не падала."""
+    parts, pos = [], 0
+    for m in ALLOWED_TAGS.finditer(text):
+        parts.append(html.escape(text[pos:m.start()], quote=False))
+        parts.append(m.group(0))
+        pos = m.end()
+    parts.append(html.escape(text[pos:], quote=False))
+    return "".join(parts)
+
+
 def extract_images(entry, limit: int = 6) -> list[str]:
     urls = []
     for key in ("media_content", "media_thumbnail"):
@@ -178,17 +219,87 @@ def extract_images(entry, limit: int = 6) -> list[str]:
     blob = entry.get("summary", "") or ""
     for c in entry.get("content") or []:
         blob += c.get("value", "") or ""
-    urls += re.findall(r'<img[^>]+src="([^"]+)"', blob)
-    return dedupe_images(urls, limit)
+    urls += re.findall(r'<img[^>]+(?:data-src|data-original|src)="([^"]+)"', blob)
+    return dedupe_images(urls)
 
 
-def dedupe_images(urls, limit=6) -> list[str]:
+UA = {"User-Agent": "Mozilla/5.0 (compatible; FashionBot/1.0)"}
+
+# заглушки, пиксели, логотипы — всё, что даёт белый квадрат
+JUNK = re.compile(
+    r"(1x1|pixel|spacer|blank|placeholder|transparent|lazy|loading|"
+    r"favicon|logo|icon|avatar|sprite|badge|social|share[-_])", re.I)
+
+
+def dedupe_images(urls, limit: int = 24) -> list[str]:
     out = []
     for u in urls:
         u = html.unescape((u or "").strip())
-        if u.startswith("http") and u not in out and not u.endswith(".svg"):
-            out.append(u)
+        if not u.startswith("http") or u in out:
+            continue
+        if JUNK.search(u):
+            continue
+        if u.lower().split("?")[0].endswith((".svg", ".gif", ".webp?small")):
+            continue
+        out.append(u)
     return out[:limit]
+
+
+def page_images(url: str) -> list[str]:
+    """Все картинки со страницы статьи — включая ленивую загрузку."""
+    r = requests.get(url, timeout=20, headers=UA)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "html.parser")
+    urls = []
+    for prop in ("og:image", "twitter:image"):
+        tag = soup.find("meta", attrs={"property": prop}) or \
+              soup.find("meta", attrs={"name": prop})
+        if tag and tag.get("content"):
+            urls.append(tag["content"])
+    for tag in soup.find_all(["img", "source"])[:60]:
+        for attr in ("data-src", "data-lazy-src", "data-original", "src"):
+            if tag.get(attr):
+                urls.append(tag[attr])
+                break
+        if tag.get("srcset"):                       # берём самый крупный вариант
+            best = tag["srcset"].split(",")[-1].strip().split(" ")[0]
+            urls.append(best)
+    return urls
+
+
+def verify_images(urls, want: int = 6) -> list[str]:
+    """Оставляет только настоящие крупные картинки — заглушки отсеиваются."""
+    ok = []
+    for u in urls[:16]:
+        try:
+            r = requests.head(u, timeout=8, allow_redirects=True, headers=UA)
+            ctype = (r.headers.get("content-type") or "").lower()
+            size = int(r.headers.get("content-length") or 0)
+            if r.status_code >= 400 or not ctype.startswith("image"):
+                r = requests.get(u, timeout=8, stream=True, headers=UA)
+                ctype = (r.headers.get("content-type") or "").lower()
+                size = int(r.headers.get("content-length") or 0)
+                if not size:
+                    size = len(next(r.iter_content(80000), b""))
+                r.close()
+            if ctype.startswith("image") and size >= 20000:
+                ok.append(u)
+        except Exception:
+            continue
+        if len(ok) >= want:
+            break
+    return ok
+
+
+def prepare_images(entry: dict) -> list[str]:
+    """От 1 до 6 картинок: что дала лента плюс что нашлось на странице."""
+    urls = list(entry.get("images") or [])
+    if len(urls) < 3 and entry.get("link"):
+        try:
+            urls += page_images(entry["link"])
+        except Exception as e:
+            log.warning("страница не открылась (%s): %s", entry.get("link"), e)
+    return verify_images(dedupe_images(urls), want=6)
 
 
 def source_name(feed, link: str) -> str:
@@ -242,11 +353,10 @@ def fetch_article(url: str) -> dict:
     paras = [p.get_text(" ", strip=True) for p in soup.find_all("p")]
     text = " ".join(p for p in paras if len(p) > 40)[:3000]
 
-    imgs = [meta("og:image"), meta("twitter:image")]
-    for tag in soup.find_all("img")[:30]:
-        src = tag.get("src") or tag.get("data-src") or ""
-        if src.startswith("http") and not re.search(r"logo|icon|avatar|pixel", src, re.I):
-            imgs.append(src)
+    try:
+        imgs = page_images(url)
+    except Exception:
+        imgs = [meta("og:image"), meta("twitter:image")]
 
     host = re.search(r"https?://(?:www\.)?([^/]+)", url)
     return {
@@ -254,7 +364,7 @@ def fetch_article(url: str) -> dict:
         "title": clean(title)[:200],
         "summary": text,
         "link": url,
-        "images": dedupe_images(imgs),
+        "images": verify_images(dedupe_images(imgs), want=6),
         "source": host.group(1) if host else "источник",
         "published": None,
     }
@@ -328,11 +438,15 @@ def build_prompt(entry: dict, slot: str, extra: str = "") -> str:
 - абзацы по 1-2 строки, между ними пустая строка
 - списки — эмодзи-буллетами (✨ 📌 🔥), но не в каждой строке подряд
 
-Форматирование — только <b>жирный</b> и <i>курсив</i>, 2-3 акцента на пост.
-Никаких ** ## __ и других тегов. Символы & < > в обычном тексте не используй.
+Форматирование обязательно, пост не должен быть сплошным текстом:
+- <b>жирный</b> — заголовок и 2-3 ключевых акцента
+- <i>курсив</i> — оттенки смысла, названия коллекций
+- <blockquote>цитата</blockquote> — короткая подводка сразу под заголовком
+  или самая сочная мысль поста
+Других тегов не используй, символы & < > в обычном тексте не пиши.
 
-Последней строкой ровно это:
-Источник: <a href="{entry['link']}">{entry['source']}</a>
+Не указывай источник и не ставь никаких ссылок — подпись канала
+добавляется автоматически после твоего текста.
 
 {extra}
 
@@ -343,6 +457,7 @@ def generate(entry: dict, slot: str, extra: str = "") -> str:
     msg = client.messages.create(model=MODEL, max_tokens=1200,
                                  messages=[{"role": "user", "content": build_prompt(entry, slot, extra)}])
     text = "".join(b.text for b in msg.content if b.type == "text").strip()
+    text = sanitize_html(md_to_html(text))
     if SIGNATURE and SIGNATURE not in text:
         text = f"{text}\n\n{SIGNATURE}"
     return text
@@ -386,9 +501,17 @@ async def send_content(bot, chat_id, text: str, images: list[str]):
                 return await bot.send_media_group(chat_id, media)
             if imgs:
                 return await bot.send_photo(chat_id, imgs[0], caption=body[:1024], parse_mode=mode)
-            return await bot.send_message(chat_id, body[:4000], parse_mode=mode)
+            return await bot.send_message(
+                chat_id, body[:4000], parse_mode=mode,
+                link_preview_options=LinkPreviewOptions(is_disabled=True))
         except BadRequest as e:
             log.warning("отправка не прошла (%s), пробую проще", e)
+            if mode is not None:
+                try:
+                    await bot.send_message(
+                        OWNER_ID, f"⚠️ Разметка не прошла, пост уйдёт без неё:\n{e}")
+                except Exception:
+                    pass
     return None
 
 
@@ -421,9 +544,27 @@ async def show_draft(bot, draft_id: str):
     d["msg_ids"] = ids + [control.message_id]
 
 
+def post_link(sent) -> str:
+    """Прямая ссылка на опубликованный пост."""
+    msg = sent[0] if isinstance(sent, (list, tuple)) and sent else sent
+    if not msg:
+        return ""
+    uname = getattr(msg.chat, "username", None)
+    if uname:
+        return f"https://t.me/{uname}/{msg.message_id}"
+    cid = str(msg.chat.id).replace("-100", "")
+    return f"https://t.me/c/{cid}/{msg.message_id}"
+
+
 async def publish(bot, d: dict, with_poll: bool = False):
-    await send_content(bot, CHANNEL_ID, d["text"], d["images"])
+    sent = await send_content(bot, CHANNEL_ID, d["text"], d["images"])
     remember_published(d["entry"]["title"])
+    link = post_link(sent)
+    if link:
+        await bot.send_message(
+            OWNER_ID,
+            f"Пост в канале: {link}\nОткрой, чтобы добавить премиум-эмодзи 💫",
+            link_preview_options=LinkPreviewOptions(is_disabled=True))
     if with_poll:
         poll = await asyncio.to_thread(make_poll, d["text"])
         if poll:
@@ -451,6 +592,7 @@ async def build_draft(bot, slot: str) -> None:
             rejected.append(f"{score}/10 — {entry['title'][:45]}")
             continue
 
+        entry["images"] = await asyncio.to_thread(prepare_images, entry)
         try:
             text = await asyncio.to_thread(generate, entry, slot)
         except Exception as e:
@@ -557,14 +699,17 @@ async def queue_tick(context: ContextTypes.DEFAULT_TYPE) -> None:
     _save(QUEUE_FILE, rest)
 
     for item in due:
-        await send_content(context.bot, CHANNEL_ID, item["text"], item["images"])
+        sent = await send_content(context.bot, CHANNEL_ID, item["text"], item["images"])
         remember_published(item.get("title", ""))
+        link = post_link(sent)
         if item.get("poll"):
             poll = await asyncio.to_thread(make_poll, item["text"])
             if poll:
                 await context.bot.send_poll(CHANNEL_ID, poll["question"],
                                             poll["options"], is_anonymous=True)
-        await context.bot.send_message(OWNER_ID, "🕒 Пост из очереди опубликован")
+        await context.bot.send_message(
+            OWNER_ID, f"🕒 Пост из очереди опубликован\n{link}",
+            link_preview_options=LinkPreviewOptions(is_disabled=True))
 
 
 async def plan_tomorrow(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -601,7 +746,7 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         if draft_id:
             d = drafts[draft_id]
             if text.startswith("="):                       # публикуем свой текст
-                own = text[1:].strip()
+                own = sanitize_html(md_to_html(text[1:].strip()))
                 if SIGNATURE not in own:
                     own = f"{own}\n\n{SIGNATURE}"
                 d["text"] = own
@@ -691,6 +836,7 @@ async def cmd_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not body:
         await update.message.reply_text("После /post напиши текст поста.")
         return
+    body = sanitize_html(md_to_html(body))
     if SIGNATURE not in body:
         body = f"{body}\n\n{SIGNATURE}"
     await send_content(context.bot, CHANNEL_ID, body, [])
