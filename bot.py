@@ -30,7 +30,7 @@ from anthropic import Anthropic
 from telegram import (Update, InlineKeyboardButton, InlineKeyboardMarkup,
                       InputMediaPhoto, LinkPreviewOptions)
 from telegram.constants import ParseMode
-from telegram.error import BadRequest
+from telegram.error import BadRequest, TelegramError
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -579,6 +579,24 @@ def make_poll(post_text: str) -> dict | None:
 
 # ---------------------------------------------------------------- отправка
 
+image_cache: dict[str, bytes] = {}
+
+
+def shrink(data: bytes, max_side: int = 1600) -> bytes:
+    """Ужимаем фото — иначе загрузка шести штук не укладывается в таймаут."""
+    try:
+        im = Image.open(io.BytesIO(data))
+        im = im.convert("RGB")
+        if max(im.size) > max_side:
+            im.thumbnail((max_side, max_side), Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=88, optimize=True)
+        small = buf.getvalue()
+        return small if len(small) < len(data) else data
+    except Exception:
+        return data
+
+
 def download_images(urls, limit: int = 6) -> list:
     """Ссылки качаем сами; file_id твоих фото отдаём телеграму как есть."""
     out = []
@@ -586,14 +604,21 @@ def download_images(urls, limit: int = 6) -> list:
         if isinstance(u, str) and not u.startswith("http"):
             out.append(u)                      # это file_id уже загруженного фото
             continue
+        if u in image_cache:
+            out.append(image_cache[u])
+            continue
         try:
             r = requests.get(u, timeout=20, headers=UA)
             r.raise_for_status()
             if not (r.headers.get("content-type") or "").lower().startswith("image"):
                 continue
-            if len(r.content) > 9_000_000:      # лимит телеграма 10 МБ
+            data = shrink(r.content)
+            if len(data) > 9_000_000:           # лимит телеграма 10 МБ
                 continue
-            out.append(r.content)
+            if len(image_cache) > 40:
+                image_cache.clear()
+            image_cache[u] = data
+            out.append(data)
         except Exception as e:
             log.warning("картинка не скачалась (%s): %s", u[:60], e)
     return out
@@ -617,10 +642,14 @@ async def send_content(bot, chat_id, text: str, images: list[str]):
                 chat_id, body[:4000], parse_mode=mode,
                 link_preview_options=LinkPreviewOptions(is_disabled=True))
 
-        except BadRequest as e:
+        except TelegramError as e:
             err = str(e).lower()
-            broken_markup = any(w in err for w in
-                                ("parse", "entit", "tag", "unsupported start"))
+            broken_markup = isinstance(e, BadRequest) and any(
+                w in err for w in ("parse", "entit", "tag", "unsupported start"))
+            if not isinstance(e, BadRequest) and blobs:
+                blobs = blobs[:2] if len(blobs) > 2 else []   # тайм-аут — шлём легче
+                log.warning("сеть подвела (%s), осталось картинок: %s", e, len(blobs))
+                continue
             if broken_markup and mode is not None:
                 log.warning("разметка сломана: %s", e)
                 body, mode = strip_tags(text), None
@@ -820,7 +849,12 @@ async def plan_tomorrow(context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(
         OWNER_ID, "🌙 Готовлю посты на завтра — четыре штуки, по одному на слот.")
     for slot in SLOT_ORDER:
-        await build_draft(context.bot, slot)
+        try:
+            await build_draft(context.bot, slot)
+        except Exception as e:
+            log.exception("черновик %s не собрался", slot)
+            await context.bot.send_message(
+                OWNER_ID, f"⚠️ Черновик «{SLOT_NAMES[slot]}» не получился: {e}"[:400])
         await asyncio.sleep(2)
     await context.bot.send_message(
         OWNER_ID, "Готово. У каждого жми «Поставить на время» — выйдут сами.")
@@ -1033,8 +1067,20 @@ async def cmd_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ---------------------------------------------------------------- запуск
 
+async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    log.exception("необработанная ошибка", exc_info=context.error)
+    try:
+        await context.bot.send_message(
+            OWNER_ID, f"⚠️ Сбой: {context.error}"[:400] + "\n\nПопробуй /now ещё раз.")
+    except Exception:
+        pass
+
+
 def main() -> None:
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = (Application.builder().token(BOT_TOKEN)
+           .connect_timeout(30).read_timeout(60)
+           .write_timeout(120).pool_timeout(60)
+           .media_write_timeout(300).build())
 
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("now", cmd_now))
@@ -1043,6 +1089,7 @@ def main() -> None:
     app.add_handler(CommandHandler("queue", cmd_queue))
     app.add_handler(CommandHandler("clear", cmd_clear))
     app.add_handler(CommandHandler("debug", cmd_debug))
+    app.add_error_handler(on_error)
     app.add_handler(CallbackQueryHandler(on_button))
     app.add_handler(MessageHandler(filters.PHOTO, on_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
