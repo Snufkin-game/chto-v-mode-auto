@@ -212,6 +212,34 @@ def ensure_format(text: str) -> str:
     return "\n".join(lines)
 
 
+TAG_RE = re.compile(r"<(/?)([a-z-]+)(?:\s[^>]*)?>", re.I)
+
+
+def fit_caption(text: str, limit: int = 1024) -> str:
+    """Подпись под фото — максимум 1024 знака. Режем так, чтобы теги не ломались."""
+    if len(text) <= limit:
+        return text
+
+    cut = text[:limit - 60]
+    last_open, last_close = cut.rfind("<"), cut.rfind(">")
+    if last_open > last_close:                 # обрыв пришёлся на середину тега
+        cut = cut[:last_open]
+
+    stack = []
+    for m in TAG_RE.finditer(cut):
+        name = m.group(2).lower()
+        if m.group(1):
+            if stack and stack[-1] == name:
+                stack.pop()
+        elif name not in ("br", "img"):
+            stack.append(name)
+
+    cut = cut.rstrip().rstrip(",;:—-") + "…"
+    for name in reversed(stack):
+        cut += f"</{name}>"
+    return cut
+
+
 def sanitize_html(text: str) -> str:
     """Экранирует всё лишнее, оставляя разрешённые теги — чтобы разметка не падала."""
     parts, pos = [], 0
@@ -511,6 +539,13 @@ def build_prompt(entry: dict, slot: str, extra: str = "") -> str:
 - ровные одинаковые предложения подряд — чередуй короткие и длинные
 - вступление вокруг да около — начинай сразу с сути
 - дословный перевод английских оборотов и порядка слов
+- английские слова, оставленные как есть: streetwear, must-have, total look,
+  athleisure, effortless, statement piece, sold out, drop. Пиши по-русски:
+  уличная мода, обязательная вещь, образ целиком, спортивный шик, небрежно,
+  акцентная вещь, раскупили, выпуск
+- аббревиатуры из оригинала (SS26, FW25, RTW, MFW, LFW, DTC, IYKYK). Расшифровывай
+  словами: весенне-летняя коллекция 2026, неделя моды в Милане, готовая одежда
+- термины, понятные только внутри индустрии, без объяснения в двух словах
 
 Что делает текст живым:
 - конкретика вместо прилагательных: не «роскошный силуэт», а что именно в нём
@@ -519,7 +554,7 @@ def build_prompt(entry: dict, slot: str, extra: str = "") -> str:
 - своё отношение к вещи, а не пересказ пресс-релиза
 
 Жёсткие требования:
-- 500-800 знаков (лимит подписи под картинками)
+- 450-700 знаков вместе с пробелами — строго, иначе подпись не влезет
 - первая строка — заголовок-крючок, оберни в <b></b>
 - пересказывай своими словами, не копируй фразы из исходника
 - НИЧЕГО не выдумывай: имена, бренды, даты, цифры — только из исходного
@@ -632,12 +667,12 @@ async def send_content(bot, chat_id, text: str, images: list[str]):
     for _ in range(4):
         try:
             if len(blobs) > 1:
-                media = [InputMediaPhoto(blobs[0], caption=body[:1024], parse_mode=mode)]
+                media = [InputMediaPhoto(blobs[0], caption=fit_caption(body), parse_mode=mode)]
                 media += [InputMediaPhoto(b) for b in blobs[1:10]]
                 return await bot.send_media_group(chat_id, media)
             if blobs:
-                return await bot.send_photo(chat_id, blobs[0], caption=body[:1024],
-                                            parse_mode=mode)
+                return await bot.send_photo(chat_id, blobs[0],
+                                            caption=fit_caption(body), parse_mode=mode)
             return await bot.send_message(
                 chat_id, body[:4000], parse_mode=mode,
                 link_preview_options=LinkPreviewOptions(is_disabled=True))
@@ -687,7 +722,7 @@ def post_link(sent) -> str:
     return f"https://t.me/c/{cid}/{msg.message_id}"
 
 
-def keyboard(draft_id: str, slot: str) -> InlineKeyboardMarkup:
+def keyboard(draft_id: str, slot: str, n_images: int = 0) -> InlineKeyboardMarkup:
     t = slot_time(slot)
     day = "завтра" if t.date() > datetime.now(TIMEZONE).date() else "сегодня"
     rows = [[InlineKeyboardButton(f"🕒 Поставить на {t:%H:%M} ({day})",
@@ -696,6 +731,9 @@ def keyboard(draft_id: str, slot: str) -> InlineKeyboardMarkup:
     if slot == "opinion":
         rows.append([InlineKeyboardButton("📊 Сейчас, с опросом",
                                           callback_data=f"poll:{draft_id}")])
+    if n_images > 1:                       # убрать конкретное фото из карусели
+        rows.append([InlineKeyboardButton(f"🗑 {i + 1}", callback_data=f"del:{draft_id}:{i}")
+                     for i in range(min(n_images, 6))])
     rows.append([InlineKeyboardButton("🔄 Другой вариант", callback_data=f"redo:{draft_id}"),
                  InlineKeyboardButton("❌ Пропустить", callback_data=f"skip:{draft_id}")])
     return InlineKeyboardMarkup(rows)
@@ -711,10 +749,17 @@ async def show_draft(bot, draft_id: str):
     head = f"⬆️ Черновик · {SLOT_NAMES.get(d['slot'], d['slot'])}\n"
     if d.get("score"):
         head += f"Актуальность: {d['score']}/10 — {d['reason']}\n"
-    head += f"🖼 картинок: {len(d['images'])}" if d["images"] else "🖼 без картинки"
+    if len(d["images"]) > 1:
+        head += (f"🖼 картинок: {len(d['images'])} — кнопки 🗑 убирают фото "
+                 f"по порядку сверху")
+    elif d["images"]:
+        head += "🖼 одна картинка"
+    else:
+        head += "🖼 без картинки"
 
-    control = await bot.send_message(OWNER_ID, head,
-                                     reply_markup=keyboard(draft_id, d["slot"]))
+    control = await bot.send_message(
+        OWNER_ID, head,
+        reply_markup=keyboard(draft_id, d["slot"], len(d["images"])))
     d["msg_ids"] = ids + [control.message_id]
 
 
@@ -807,6 +852,19 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         drafts[draft_id] = {"text": text, "entry": entry, "slot": slot,
                             "images": entry["images"], "score": None, "reason": ""}
         await show_draft(context.bot, draft_id)
+        return
+
+    if action == "del":                     # убираем фото под номером
+        did, idx = key.split(":")
+        d = drafts.get(did)
+        if not d:
+            await q.edit_message_text("Черновик устарел — жми /now для нового.")
+            return
+        idx = int(idx)
+        if 0 <= idx < len(d["images"]):
+            d["images"].pop(idx)
+        await q.edit_message_text(f"🗑 Убрала фото {idx + 1}, показываю заново")
+        await show_draft(context.bot, did)
         return
 
     d = drafts.get(key)
