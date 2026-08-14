@@ -110,6 +110,7 @@ def cfg() -> dict:
     data.setdefault("tone", CHANNEL_TONE)
     data.setdefault("min_score", MIN_SCORE)
     data.setdefault("plan_time", PLAN_TIME)
+    data.setdefault("tgstat_token", os.environ.get("TGSTAT_TOKEN", "").strip())
     return data
 
 
@@ -272,6 +273,63 @@ def track(event: str, **kw):
         log.warning("статистика не записалась: %s", e)
 
 
+def norm_link(url: str) -> str:
+    """t.me/channel/123 без протокола и хвостов — для сопоставления постов."""
+    u = (url or "").lower().split("?")[0].rstrip("/")
+    u = re.sub(r"^https?://", "", u).replace("t.me/s/", "t.me/")
+    return u
+
+
+def tgstat_pull() -> tuple[int, str]:
+    """Забирает просмотры пачкой и вписывает их в журнал. (обновлено, заметка)"""
+    token = cfg().get("tgstat_token", "").strip()
+    if not token:
+        return 0, "токен TGStat не задан"
+    channel = CHANNEL_ID if str(CHANNEL_ID).startswith("@") else str(CHANNEL_ID)
+    try:
+        r = requests.get("https://api.tgstat.ru/channels/posts",
+                         params={"token": token, "channel": channel,
+                                 "limit": 50, "extended": 0},
+                         timeout=25)
+        data = r.json()
+    except Exception as e:
+        return 0, f"не достучалась до TGStat ({type(e).__name__})"
+
+    if data.get("status") != "ok":
+        err = (data.get("error") or "неизвестная ошибка")[:80]
+        return 0, f"TGStat ответил: {err}"
+
+    seen = {}
+    for item in (data.get("response") or {}).get("items", []):
+        link = norm_link(item.get("link", ""))
+        if link:
+            seen[link] = int(item.get("views") or 0)
+    if not seen:
+        return 0, "TGStat пока не видит публикаций канала"
+
+    rows = _load(STATS_FILE, [])
+    upd = 0
+    for row in rows:
+        if row.get("event") != "published":
+            continue
+        link = norm_link(row.get("link", ""))
+        if link in seen and seen[link] != row.get("views"):
+            row["views"] = seen[link]
+            upd += 1
+    _save(STATS_FILE, rows)
+    _save(os.path.join(DATA_DIR, "tgstat_last.json"),
+          {"at": datetime.now(TIMEZONE).isoformat(), "posts": len(seen)})
+    return upd, f"обновлено постов: {upd}"
+
+
+async def stats_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Раз в двое суток — чтобы уложиться в бесплатные 50 запросов в месяц."""
+    if not cfg().get("tgstat_token"):
+        return
+    upd, note = await asyncio.to_thread(tgstat_pull)
+    log.info("TGStat: %s", note)
+
+
 def build_report(days: int = 7) -> str:
     rows = _load(STATS_FILE, [])
     edge = datetime.now(TIMEZONE) - timedelta(days=days)
@@ -306,6 +364,23 @@ def build_report(days: int = 7) -> str:
         scores = [r["score"] for r in published if isinstance(r.get("score"), int)]
         if scores:
             out.append(f"  средняя актуальность: {sum(scores) / len(scores):.1f}/10")
+
+    withv = [r for r in published if isinstance(r.get("views"), int) and r["views"] > 0]
+    if withv:
+        avg = sum(r["views"] for r in withv) / len(withv)
+        out += ["", f"👁 Просмотры (по {len(withv)} постам)",
+                f"  в среднем: {round(avg)}"]
+        by_slot = {}
+        for r in withv:
+            k = r.get("slot", "?")
+            by_slot.setdefault(k, []).append(r["views"])
+        ranked = sorted(by_slot.items(), key=lambda x: -sum(x[1]) / len(x[1]))
+        for k, vals in ranked:
+            out.append(f"  {SLOT_NAMES.get(k, k)}: {round(sum(vals) / len(vals))}")
+        if len(ranked) > 1:
+            out.append(f"  лучше всего читают: {SLOT_NAMES.get(ranked[0][0], '')}")
+        top = max(withv, key=lambda r: r["views"])
+        out.append(f"  рекорд: {top['views']} — {top.get('title', '')[:45]}")
 
     out += ["", f"Отклонено тобой: {skipped}",
             f"Отсеяно по актуальности: {rejected}"]
@@ -1207,7 +1282,8 @@ async def publish(bot, d: dict, with_poll: bool = False):
     remember_published(d["entry"]["title"])
     track("published", slot=d.get("slot"), score=d.get("score"),
           style=d.get("style"), source=d["entry"].get("source"),
-          title=d["entry"].get("title", "")[:80], images=len(d.get("images", [])))
+          title=d["entry"].get("title", "")[:80], images=len(d.get("images", [])),
+          link=post_link(sent))
     link = post_link(sent)
     if link:
         await bot.send_message(
@@ -1681,6 +1757,9 @@ def settings_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(f"🎯 Порог актуальности: {c['min_score']}/10",
                               callback_data="set:score")],
         [InlineKeyboardButton("✍️ Тон канала", callback_data="set:tone")],
+        [InlineKeyboardButton(
+            "👁 Просмотры: " + ("подключены" if cfg().get("tgstat_token") else "выкл"),
+            callback_data="set:tgstat")],
         [InlineKeyboardButton("📡 Источники", callback_data="set:src")],
     ])
 
@@ -1780,6 +1859,16 @@ async def on_settings_button(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 "8 — только яркие темы, постов меньше\n"
                 "6 — берёт почти всё\n"
                 "Отмена — /settings")
+        elif what == "tgstat":
+            waiting[OWNER_ID] = "tgstat"
+            await q.edit_message_text(
+                "Просмотры постов подтягиваются через TGStat.\n\n"
+                "1. Зайдите на tgstat.ru, войдите через Telegram\n"
+                "2. Личный кабинет → активируйте бесплатный тариф FREE\n"
+                "3. Скопируйте токен и пришлите его мне\n\n"
+                "Бесплатно: 2 своих канала, 50 запросов в месяц. "
+                "Я забираю данные раз в двое суток пачкой — в лимит укладываемся.\n\n"
+                "Отключить — пришлите слово выкл. Отмена — /settings")
         elif what == "tone":
             waiting[OWNER_ID] = "tone"
             await q.edit_message_text(
@@ -1797,6 +1886,22 @@ async def handle_waiting(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return False
     text = (update.message.text or "").strip()
     waiting.pop(OWNER_ID, None)
+
+    if mode == "tgstat":
+        if text.lower() in ("выкл", "off", "нет", "-"):
+            cfg_set(tgstat_token="")
+            await update.message.reply_text("Просмотры отключены.")
+            return True
+        cfg_set(tgstat_token=text.strip())
+        await update.message.reply_text("Проверяю токен…")
+        upd, note = await asyncio.to_thread(tgstat_pull)
+        ok = "не задан" not in note and "ответил" not in note and "достучалась" not in note
+        await update.message.reply_text(
+            ("✅ Подключено. " if ok else "⚠️ ") + note +
+            ("\n\nПросмотры появятся в отчёте после первого сбора." if ok else
+             "\n\nПроверьте токен и что тариф активирован в личном кабинете."),
+            reply_markup=settings_menu())
+        return True
 
     if mode == "story":
         if len(text) < 30:
@@ -1960,8 +2065,16 @@ async def on_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     elif what == "report":
         await q.edit_message_text(
             build_report(7)[:4000], reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("📅 За месяц", callback_data="m:report30")],
+                [[InlineKeyboardButton("📅 За месяц", callback_data="m:report30"),
+                  InlineKeyboardButton("👁 Обновить просмотры", callback_data="m:refresh")],
                  [InlineKeyboardButton("‹ меню", callback_data="m:back")]]))
+    elif what == "refresh":
+        await q.edit_message_text("Забираю просмотры…")
+        upd, note = await asyncio.to_thread(tgstat_pull)
+        await q.edit_message_text(
+            build_report(7)[:3900] + f"\n\n{note}",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("‹ меню", callback_data="m:back")]]))
     elif what == "report30":
         await q.edit_message_text(
             build_report(30)[:4000], reply_markup=InlineKeyboardMarkup(
@@ -2219,6 +2332,7 @@ def main() -> None:
                             name="watchdog")
     app.job_queue.run_daily(remind_pending, time=dtime(hour=10, minute=30, tzinfo=TIMEZONE),
                             name="remind")
+    app.job_queue.run_repeating(stats_job, interval=48 * 3600, first=120, name="tgstat")
     app.job_queue.run_daily(weekly_report, time=dtime(hour=11, minute=0, tzinfo=TIMEZONE),
                             days=(6,), name="report")
 
