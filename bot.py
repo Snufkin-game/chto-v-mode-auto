@@ -111,6 +111,7 @@ def cfg() -> dict:
     data.setdefault("min_score", MIN_SCORE)
     data.setdefault("plan_time", PLAN_TIME)
     data.setdefault("tgstat_token", os.environ.get("TGSTAT_TOKEN", "").strip())
+    data.setdefault("polish", True)
     return data
 
 
@@ -869,6 +870,87 @@ def explain_api_error(e: Exception) -> str:
     return f"Ошибка нейросети: {e}"[:400]
 
 
+# слова и обороты, по которым видно перевод
+CALQUES = {
+    r"релиз": "выпуск, вышли, поступят в продажу",
+    r"дроп": "выпуск",
+    r"ритейл|розниц": "магазины",
+    r"совместн(ую|ая|ые) (пар|коллекц|модел)": "вместе с, сделали вдвоём",
+    r"коллаборац": "совместная работа, сделали вместе",
+    r"айтем|аутфит": "вещь, образ",
+    r"цветовая гамма": "цвета",
+    r"модель" : "пара, вещь, кроссовки — конкретно",
+    r"представлен|презентова": "показали, выпустили",
+    r"был(а|и|о) вдохновлен": "подсмотрел, отсылка к",
+    r"маст-?хэв|must have": "вещь, без которой не обойтись",
+    r"культов|знаков|иконическ|легендарн": "конкретно чем известна",
+    r"статусн|премиальн": "дорогой, заметный",
+    r"формат «|в формате": "просто скажи как",
+    r"локац": "место",
+    r"доступн(ый|ая|ое) всем": "купить сможет любой",
+    r"не просто .{2,25}, а ": "убрать эту конструкцию",
+    r"стоит отметить|неудивительно|именно поэтому|в мире моды": "убрать",
+    r"вайб|лук бук|бренд-стори|сторител": "по-русски",
+    r"данн(ый|ая|ое)|данные ": "этот, эта",
+    r"является": "убрать, переписать проще",
+}
+
+
+def find_calques(text: str) -> list[str]:
+    plain = strip_tags(text).lower()
+    hits = []
+    for pat, hint in CALQUES.items():
+        m = re.search(pat, plain)
+        if m:
+            hits.append(f"«{m.group(0)}» → {hint}")
+    return hits
+
+
+def polish(text: str, tone: str) -> str:
+    """Второй проход: редактор-носитель вычищает перевод."""
+    hits = find_calques(text)
+    flagged = ("\n\nЯ уже заметила эти места:\n" + "\n".join(f"- {h}" for h in hits)
+               if hits else "")
+    prompt = f"""Ты редактор русского телеграм-канала. Перед тобой пост, который
+написали, глядя на английскую статью. Читается как перевод. Почини это.
+
+Пост:
+{text}
+{flagged}
+
+Что делать:
+1. Прочитай каждую фразу вслух про себя. Если человек так не скажет в разговоре —
+   перепиши. Это главный критерий, важнее всех правил.
+2. Убери кальки с английского. Примеры замен:
+   «выпускает совместную пару с Nike» → «сделала кроссовки вместе с Nike»
+   «магазинный релиз, доступный всем» → «в этот раз просто поступят в продажу»
+   «формат для своих, без всякой розницы» → «раздавали своим, в магазины не попадали»
+   «цветовая гамма не кислотная» → «зелёный тут не ядовитый»
+   «была вдохновлена архивами» → «подсмотрели в старых архивах»
+3. Убери значки из начала каждого абзаца. Оставь два-три там, где они
+   правда помогают — в перечислении или у важной мысли. Сплошной ряд
+   одинаковых значков выглядит как шаблон.
+4. Разбей ритм: рядом с длинной фразой поставь короткую. Одинаковые по длине
+   предложения подряд — верный признак машины.
+5. Одна разговорная связка на пост, если её нет: «в общем», «короче»,
+   «и вот тут интересно», «тот случай, когда».
+
+Тон канала: {tone}
+
+Чего НЕЛЬЗЯ:
+- добавлять факты, которых в тексте нет
+- менять имена, бренды, цифры, даты
+- убирать теги <b> <i> <blockquote> — форматирование сохрани
+- удлинять: итог должен быть не длиннее исходного
+
+Верни только готовый пост, без пояснений."""
+    try:
+        return ask(prompt, max_tokens=1500)
+    except Exception as e:
+        log.warning("правка не удалась: %s", e)
+        return text
+
+
 def extract_facts(entry: dict) -> str:
     """Шаг 1: вытаскиваем из статьи голые факты по-русски, без стиля."""
     prompt = f"""Вот статья о моде на английском.
@@ -982,12 +1064,10 @@ def build_prompt(facts: str, slot: str, tone: str, extra: str = "") -> str:
 - первая строка — заголовок-крючок в <b></b>
 - бренды и имена латиницей (Saint Laurent, Miu Miu)
 - абзацы по 1-2 строки, между ними пустая строка
-- в списках каждый пункт начинай СВОИМ значком, они не должны повторяться:
-  🔹 🔸 ▫️ 🔻 ✅ 📍 ➖ ◾️ — выбирай подходящие по смыслу
-- смысловые блоки помечай тематическим значком в начале строки:
-  ‼️ важное · 🔍 разбор детали · 📝 совет · 🔗 связь с другим событием ·
-  📚 история вещи · 📆 даты и сезоны · 💰 цена · 👀 что заметить · ⚡️ неожиданное
-- один и тот же значок в посте не повторяй; всего значков 3-6 на пост
+- значки ставь только там, где есть настоящее перечисление, и не больше трёх
+  на пост: 🔹 🔸 ▫️ 🔻 📍 ‼️ 🔍 📝 👀 ⚡️ — все разные
+- НЕ начинай каждый абзац со значка, это выглядит как шаблон; обычные абзацы
+  идут без них
 - ничего не выдумывай сверх фактов выше
 
 Форматирование обязательно, сплошного текста быть не должно:
@@ -1014,6 +1094,10 @@ def generate(entry: dict, slot: str, extra: str = "", style: str = "base") -> st
             facts = extract_facts(entry)
             entry["facts"] = facts
         text = ask(build_prompt(facts, slot, tone, extra), max_tokens=1500)
+
+    if slot != "story" and cfg().get("polish", True):
+        text = polish(text, tone)
+
     text = vary_bullets(ensure_format(sanitize_html(md_to_html(text))))
     if SIGNATURE and SIGNATURE not in text:
         text = f"{text}\n\n{SIGNATURE}"
@@ -1203,8 +1287,9 @@ def keyboard(draft_id: str, slot: str, n_images: int = 0) -> InlineKeyboardMarku
     if n_images > 1:                       # убрать конкретное фото из карусели
         rows.append([InlineKeyboardButton(f"🗑 {i + 1}", callback_data=f"del:{draft_id}:{i}")
                      for i in range(min(n_images, 6))])
-    rows.append([InlineKeyboardButton("🕐 Другое время", callback_data=f"when:{draft_id}"),
+    rows.append([InlineKeyboardButton("🗣 Ещё живее", callback_data=f"live:{draft_id}"),
                  InlineKeyboardButton("✍️ Другой стиль", callback_data=f"styl:{draft_id}")])
+    rows.append([InlineKeyboardButton("🕐 Другое время", callback_data=f"when:{draft_id}")])
     if slot != "story":                    # у личного опыта сверять не с чем
         rows.append([InlineKeyboardButton("🔍 Проверить факты",
                                           callback_data=f"fact:{draft_id}")])
@@ -1258,6 +1343,10 @@ async def show_draft(bot, draft_id: str):
 
     label = STYLE_PRESETS.get(d.get("style", "base"), ("",))[0]
     head = f"⬆️ Черновик · {SLOT_NAMES.get(d['slot'], d['slot'])} · {label}\n"
+    left = find_calques(d["text"])
+    if left:
+        head += "⚠️ похоже на перевод: " + "; ".join(h.split("»")[0] + "»"
+                                                     for h in left[:3]) + "\n"
     if d.get("score"):
         head += f"Актуальность: {d['score']}/10 — {d['reason']}\n"
     if len(d["images"]) > 1:
@@ -1425,6 +1514,20 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         d["style"] = style
         d["text"] = await asyncio.to_thread(generate, d["entry"], d["slot"], "", style)
         await show_draft(context.bot, did)
+        return
+
+    if action == "live":
+        d = drafts.get(key)
+        if not d:
+            await q.edit_message_text("Черновик устарел — жми /now для нового.")
+            return
+        await q.edit_message_text("🗣 Вычищаю канцелярит…")
+        tone = STYLE_PRESETS.get(d.get("style", "base"),
+                                 STYLE_PRESETS["base"])[1] or get_tone()
+        raw = await asyncio.to_thread(polish, d["text"], tone)
+        d["text"] = vary_bullets(ensure_format(sanitize_html(md_to_html(raw))))
+        drafts_save()
+        await show_draft(context.bot, key)
         return
 
     if action == "fact":
@@ -1758,6 +1861,9 @@ def settings_menu() -> InlineKeyboardMarkup:
                               callback_data="set:score")],
         [InlineKeyboardButton("✍️ Тон канала", callback_data="set:tone")],
         [InlineKeyboardButton(
+            "🗣 Правка под живой русский: " + ("вкл" if c.get("polish", True) else "выкл"),
+            callback_data="set:polish")],
+        [InlineKeyboardButton(
             "👁 Просмотры: " + ("подключены" if cfg().get("tgstat_token") else "выкл"),
             callback_data="set:tgstat")],
         [InlineKeyboardButton("📡 Источники", callback_data="set:src")],
@@ -1859,6 +1965,17 @@ async def on_settings_button(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 "8 — только яркие темы, постов меньше\n"
                 "6 — берёт почти всё\n"
                 "Отмена — /settings")
+        elif what == "polish":
+            new = not cfg().get("polish", True)
+            cfg_set(polish=new)
+            await q.edit_message_text(
+                ("🗣 Правка включена: после написания бот перечитывает пост "
+                 "и вычищает кальки с английского. Стоит одного лишнего запроса "
+                 "к нейросети на пост."
+                 if new else
+                 "🗣 Правка выключена: посты идут как написались, дешевле, "
+                 "но текст ближе к переводу."),
+                reply_markup=settings_menu())
         elif what == "tgstat":
             waiting[OWNER_ID] = "tgstat"
             await q.edit_message_text(
