@@ -63,6 +63,7 @@ SEEN_FILE = os.path.join(DATA_DIR, "seen.json")
 PUB_FILE = os.path.join(DATA_DIR, "published.json")
 QUEUE_FILE = os.path.join(DATA_DIR, "queue.json")
 DRAFTS_FILE = os.path.join(DATA_DIR, "drafts.json")
+STATS_FILE = os.path.join(DATA_DIR, "stats.json")
 
 # вечерняя планёрка: бот готовит все посты на завтра. Пусто — выключено
 PLAN_TIME = os.environ.get("PLAN_TIME", "21:00").strip()
@@ -214,6 +215,91 @@ def drafts_load():
         log.warning("черновики не загрузились: %s", e)
 
 
+def track(event: str, **kw):
+    """Пишет событие в журнал — из него потом собирается отчёт."""
+    try:
+        rows = _load(STATS_FILE, [])
+        rows.append({"at": datetime.now(TIMEZONE).isoformat(), "event": event, **kw})
+        _save(STATS_FILE, rows[-1500:])
+    except Exception as e:
+        log.warning("статистика не записалась: %s", e)
+
+
+def build_report(days: int = 7) -> str:
+    rows = _load(STATS_FILE, [])
+    edge = datetime.now(TIMEZONE) - timedelta(days=days)
+    recent = []
+    for r in rows:
+        try:
+            if datetime.fromisoformat(r["at"]) >= edge:
+                recent.append(r)
+        except Exception:
+            continue
+    if not recent:
+        return f"За {days} дн. данных нет. Отчёт наполнится за пару дней работы."
+
+    def count(ev):
+        return sum(1 for r in recent if r["event"] == ev)
+
+    published = [r for r in recent if r["event"] == "published"]
+    skipped = count("skipped")
+    rejected = count("rejected")
+    redo = count("redo")
+    edited = count("edited")
+    styled = count("styled")
+
+    out = [f"📊 Отчёт за {days} дн.", ""]
+    out.append(f"Опубликовано: {len(published)}")
+    if published:
+        by_slot = {}
+        for r in published:
+            by_slot[r.get("slot", "?")] = by_slot.get(r.get("slot", "?"), 0) + 1
+        out.append("  " + " · ".join(f"{SLOT_NAMES.get(k, k)}: {v}"
+                                     for k, v in sorted(by_slot.items(), key=lambda x: -x[1])))
+        scores = [r["score"] for r in published if isinstance(r.get("score"), int)]
+        if scores:
+            out.append(f"  средняя актуальность: {sum(scores) / len(scores):.1f}/10")
+
+    out += ["", f"Отклонено тобой: {skipped}",
+            f"Отсеяно по актуальности: {rejected}"]
+    total = len(published) + skipped
+    if total:
+        out.append(f"Доля принятых: {round(len(published) * 100 / total)}%")
+
+    out += ["", "Правки:",
+            f"  переписано заново: {redo}",
+            f"  правок текстом: {edited}",
+            f"  смен стиля: {styled}"]
+
+    # какие источники реально дают посты
+    src_pub, src_rej = {}, {}
+    for r in recent:
+        src = r.get("source")
+        if not src:
+            continue
+        if r["event"] == "published":
+            src_pub[src] = src_pub.get(src, 0) + 1
+        elif r["event"] in ("rejected", "skipped"):
+            src_rej[src] = src_rej.get(src, 0) + 1
+
+    if src_pub or src_rej:
+        out += ["", "Источники (в канал / мимо):"]
+        for src in sorted(set(src_pub) | set(src_rej),
+                          key=lambda x: -src_pub.get(x, 0)):
+            out.append(f"  {src[:28]}: {src_pub.get(src, 0)} / {src_rej.get(src, 0)}")
+        dead = [s for s in src_rej if not src_pub.get(s)]
+        if dead:
+            out += ["", f"Ни одного поста не дали: {', '.join(d[:20] for d in dead[:5])}"]
+
+    if published:
+        best = max(published, key=lambda r: r.get("score", 0))
+        out += ["", f"Самая сильная тема: {best.get('title', '')[:60]}"]
+
+    out += ["", "Просмотры и подписчики — в статистике самого канала,",
+            "боту Telegram их не отдаёт."]
+    return "\n".join(out)
+
+
 def queue_add(d: dict, when: datetime, with_poll: bool = False):
     q = _load(QUEUE_FILE, [])
     q.append({"when": when.isoformat(), "text": d["text"], "images": d["images"],
@@ -261,6 +347,25 @@ def md_to_html(text: str) -> str:
     if quote:
         out.append("<blockquote>" + "\n".join(quote) + "</blockquote>")
     return "\n".join(out)
+
+
+BULLETS = ["🔹", "🔸", "▫️", "🔻", "📍", "◾️", "✅", "➖"]
+
+
+def vary_bullets(text: str) -> str:
+    """Если модель поставила один значок подряд — разводим на разные."""
+    lines = text.split("\n")
+    marks = [i for i, ln in enumerate(lines)
+             if re.match(r"^\s*([\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]{1,2})\s+\S", ln)]
+    if len(marks) < 2:
+        return text
+    used = [re.match(r"^\s*(\S+)", lines[i]).group(1) for i in marks]
+    if len(set(used)) > 1:
+        return text                       # уже разные — не трогаем
+    pool = [b for b in BULLETS if b != used[0]]
+    for n, i in enumerate(marks[1:]):
+        lines[i] = re.sub(r"^(\s*)\S+", r"\1" + pool[n % len(pool)], lines[i], count=1)
+    return "\n".join(lines)
 
 
 def ensure_format(text: str) -> str:
@@ -683,7 +788,12 @@ def build_prompt(facts: str, slot: str, tone: str, extra: str = "") -> str:
 - первая строка — заголовок-крючок в <b></b>
 - бренды и имена латиницей (Saint Laurent, Miu Miu)
 - абзацы по 1-2 строки, между ними пустая строка
-- списки — эмодзи-буллетами (✨ 📌 🔥), не в каждой строке подряд
+- в списках каждый пункт начинай СВОИМ значком, они не должны повторяться:
+  🔹 🔸 ▫️ 🔻 ✅ 📍 ➖ ◾️ — выбирай подходящие по смыслу
+- смысловые блоки помечай тематическим значком в начале строки:
+  ‼️ важное · 🔍 разбор детали · 📝 совет · 🔗 связь с другим событием ·
+  📚 история вещи · 📆 даты и сезоны · 💰 цена · 👀 что заметить · ⚡️ неожиданное
+- один и тот же значок в посте не повторяй; всего значков 3-6 на пост
 - ничего не выдумывай сверх фактов выше
 
 Форматирование обязательно, сплошного текста быть не должно:
@@ -708,7 +818,7 @@ def generate(entry: dict, slot: str, extra: str = "", style: str = "base") -> st
                                  messages=[{"role": "user",
                                             "content": build_prompt(facts, slot, tone, extra)}])
     text = "".join(b.text for b in msg.content if b.type == "text").strip()
-    text = ensure_format(sanitize_html(md_to_html(text)))
+    text = vary_bullets(ensure_format(sanitize_html(md_to_html(text))))
     if SIGNATURE and SIGNATURE not in text:
         text = f"{text}\n\n{SIGNATURE}"
     return text
@@ -976,6 +1086,9 @@ async def publish(bot, d: dict, with_poll: bool = False):
     if not sent:
         return None
     remember_published(d["entry"]["title"])
+    track("published", slot=d.get("slot"), score=d.get("score"),
+          style=d.get("style"), source=d["entry"].get("source"),
+          title=d["entry"].get("title", "")[:80], images=len(d.get("images", [])))
     link = post_link(sent)
     if link:
         await bot.send_message(
@@ -1003,9 +1116,12 @@ async def build_draft(bot, slot: str) -> None:
         save_seen(seen)
         score, reason, dup = await asyncio.to_thread(score_entry, entry)
         if dup:
+            track("rejected", reason="дубль", source=entry.get("source"))
             rejected.append(f"дубль — {entry['title'][:45]}")
             continue
         if score < cfg()["min_score"]:
+            track("rejected", reason="низкая актуальность", score=score,
+                  source=entry.get("source"))
             rejected.append(f"{score}/10 — {entry['title'][:45]}")
             continue
 
@@ -1042,6 +1158,8 @@ async def send_draft(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     q = update.callback_query
     await q.answer()
+    if await on_menu_button(update, context):
+        return
     if await on_settings_button(update, context):
         return
     action, key = q.data.split(":", 1)
@@ -1106,6 +1224,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await q.edit_message_text("Черновик устарел — жми /now для нового.")
             return
         label = STYLE_PRESETS[style][0]
+        track("styled", style=style, slot=d.get("slot"))
         await q.edit_message_text(f"✍️ Переписываю: {label}…")
         d["style"] = style
         d["text"] = await asyncio.to_thread(generate, d["entry"], d["slot"], "", style)
@@ -1173,11 +1292,14 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         drafts_save()
 
     elif action == "skip":
+        track("skipped", slot=d.get("slot"), score=d.get("score"),
+              source=d["entry"].get("source"))
         await q.edit_message_text("❌ Пропущено")
         drafts.pop(key, None)
         drafts_save()
 
     elif action == "redo":
+        track("redo", slot=d.get("slot"), source=d["entry"].get("source"))
         await q.edit_message_text("🔄 Переписываю…")
         d["text"] = await asyncio.to_thread(
             generate, d["entry"], d["slot"],
@@ -1279,6 +1401,7 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                 drafts.pop(draft_id, None)
                 drafts_save()
                 return
+            track("edited", slot=d.get("slot"), source=d["entry"].get("source"))
             await update.message.reply_text("Правлю…")     # переписываем
             d["text"] = await asyncio.to_thread(
                 generate, d["entry"], d["slot"], f"Правки от автора канала: {text}",
@@ -1587,11 +1710,119 @@ async def handle_waiting(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     return False
 
 
+def main_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("✍️ Сделать пост", callback_data="m:now"),
+         InlineKeyboardButton("🌙 Посты на завтра", callback_data="m:plan")],
+        [InlineKeyboardButton("🕒 Очередь", callback_data="m:queue"),
+         InlineKeyboardButton("📊 Отчёт", callback_data="m:report")],
+        [InlineKeyboardButton("📡 Источники", callback_data="m:src"),
+         InlineKeyboardButton("⚙️ Настройки", callback_data="m:set")],
+        [InlineKeyboardButton("🩺 Проверить канал", callback_data="m:check"),
+         InlineKeyboardButton("❓ Подсказка", callback_data="m:help")],
+    ])
+
+
+MENU_TEXT = ("Меню 👗\n\nВыбери, что сделать. "
+             "Вернуться сюда в любой момент — кнопка Меню внизу или /menu")
+
+
+HELP_TEXT = (
+    "Как пользоваться\n\n"
+    "Кинь ссылку — сделаю пост из статьи\n"
+    "Напиши тему словами — сделаю пост по ней\n"
+    "Пришли фото с подписью — опубликую как пост\n"
+    "Альбом до 6 фото — тоже пойму\n\n"
+    "Ответь на черновик:\n"
+    "• текстом — перепишу с правкой\n"
+    "• текстом со знаком = — опубликую как есть\n"
+    "• своим фото — поставлю его к тексту\n\n"
+    "Под черновиком: время, стиль, проверка фактов, удаление лишних фото")
+
+
+async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != OWNER_ID:
+        return
+    await update.message.reply_text(MENU_TEXT, reply_markup=main_menu())
+
+
+async def on_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Кнопки главного меню. True — если кнопка отсюда."""
+    q = update.callback_query
+    if not q.data.startswith("m:"):
+        return False
+    what = q.data.split(":")[1]
+
+    if what == "back":
+        await q.edit_message_text(MENU_TEXT, reply_markup=main_menu())
+    elif what == "help":
+        await q.edit_message_text(
+            HELP_TEXT, reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("‹ меню", callback_data="m:back")]]))
+    elif what == "now":
+        await q.edit_message_text("Подбираю тему…")
+        await build_draft(context.bot, SLOT_ORDER[rotation["i"] % len(SLOT_ORDER)])
+        rotation["i"] += 1
+    elif what == "plan":
+        await q.edit_message_text("Готовлю посты на завтра…")
+        await plan_tomorrow(context)
+    elif what == "queue":
+        rows = sorted(_load(QUEUE_FILE, []), key=lambda i: i["when"])
+        if rows:
+            lines = [f"{datetime.fromisoformat(i['when']):%d.%m %H:%M} — "
+                     f"{strip_tags(i['text']).splitlines()[0][:40]}" for i in rows]
+            body = "В очереди:\n\n" + "\n".join(lines)
+            kb = [[InlineKeyboardButton("🗑 Очистить очередь", callback_data="m:clear")],
+                  [InlineKeyboardButton("‹ меню", callback_data="m:back")]]
+        else:
+            body, kb = "Очередь пуста.", [[InlineKeyboardButton("‹ меню",
+                                                               callback_data="m:back")]]
+        await q.edit_message_text(body, reply_markup=InlineKeyboardMarkup(kb))
+    elif what == "clear":
+        _save(QUEUE_FILE, [])
+        await q.edit_message_text("Очередь очищена.", reply_markup=main_menu())
+    elif what == "report":
+        await q.edit_message_text(
+            build_report(7)[:4000], reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("📅 За месяц", callback_data="m:report30")],
+                 [InlineKeyboardButton("‹ меню", callback_data="m:back")]]))
+    elif what == "report30":
+        await q.edit_message_text(
+            build_report(30)[:4000], reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("‹ меню", callback_data="m:back")]]))
+    elif what == "src":
+        await q.edit_message_text(sources_text(), reply_markup=sources_menu(),
+                                  link_preview_options=LinkPreviewOptions(is_disabled=True))
+    elif what == "set":
+        await q.edit_message_text(f"Настройки\n\nТон сейчас:\n{cfg()['tone'][:300]}",
+                                  reply_markup=settings_menu())
+    elif what == "check":
+        await q.edit_message_text("Проверяю канал…")
+        await run_check(context.bot, OWNER_ID)
+    return True
+
+
+async def setup_commands(app) -> None:
+    """Список команд в синей кнопке Меню рядом с полем ввода."""
+    from telegram import BotCommand
+    await app.bot.set_my_commands([
+        BotCommand("menu", "Меню — все возможности"),
+        BotCommand("now", "Сделать пост сейчас"),
+        BotCommand("plan", "Посты на завтра"),
+        BotCommand("queue", "Очередь публикаций"),
+        BotCommand("report", "Отчёт за неделю"),
+        BotCommand("sources", "Источники"),
+        BotCommand("settings", "Настройки"),
+        BotCommand("check", "Проверить канал"),
+    ])
+
+
 # ---------------------------------------------------------------- команды
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id != OWNER_ID:
         return
+    await update.message.reply_text(MENU_TEXT, reply_markup=main_menu())
     await update.message.reply_text(
         "Бот на связи 👗\n\n"
         f"Черновики приходят в {', '.join(POST_TIMES)}:\n"
@@ -1602,6 +1833,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/sources — источники: добавить, удалить, проверить\n"
         "/settings — время постов, тон, порог актуальности\n"
         "/queue — что стоит в очереди, /clear — очистить\n"
+        "/report — отчёт за неделю (или /report 30)\n"
         "/now — черновик прямо сейчас\n"
         "Кинь ссылку — сделаю пост из неё\n"
         "Напиши тему текстом — сделаю пост по ней\n"
@@ -1665,23 +1897,34 @@ async def cmd_debug(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(body[:4000])
 
 
-async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Проверяет, видит ли бот канал и может ли туда писать."""
+async def cmd_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Отчёт: /report или /report 30"""
     if update.effective_user.id != OWNER_ID:
         return
+    arg = (update.message.text or "").partition(" ")[2].strip()
+    days = int(arg) if arg.isdigit() and 1 <= int(arg) <= 90 else 7
+    await update.message.reply_text(build_report(days))
+
+
+async def weekly_report(context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_message(OWNER_ID, build_report(7))
+
+
+async def run_check(bot, chat_id: int) -> None:
+    """Проверяет, видит ли бот канал и может ли туда писать."""
     lines = [f"CHANNEL_ID в настройках: {CHANNEL_ID}"]
     try:
-        chat = await context.bot.get_chat(CHANNEL_ID)
+        chat = await bot.get_chat(CHANNEL_ID)
         lines.append(f"✅ Канал найден: {chat.title} ({chat.type})")
     except Exception as e:
         lines.append(f"❌ Канал не найден: {e}")
         lines.append("\nЛибо CHANNEL_ID неверный, либо бот не добавлен в канал.")
-        await update.message.reply_text("\n".join(lines))
+        await bot.send_message(chat_id, "\n".join(lines), reply_markup=main_menu())
         return
 
     try:
-        me = await context.bot.get_me()
-        member = await context.bot.get_chat_member(CHANNEL_ID, me.id)
+        me = await bot.get_me()
+        member = await bot.get_chat_member(CHANNEL_ID, me.id)
         lines.append(f"Роль бота: {member.status}")
         can_post = getattr(member, "can_post_messages", None)
         if member.status != "administrator":
@@ -1694,13 +1937,19 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         lines.append(f"❌ Не удалось проверить права: {e}")
 
     try:
-        test = await context.bot.send_message(CHANNEL_ID, "проверка связи")
-        await context.bot.delete_message(CHANNEL_ID, test.message_id)
+        test = await bot.send_message(CHANNEL_ID, "проверка связи")
+        await bot.delete_message(CHANNEL_ID, test.message_id)
         lines.append("✅ Тестовое сообщение отправилось и удалено")
     except Exception as e:
         lines.append(f"❌ Отправить не получилось: {e}")
 
-    await update.message.reply_text("\n".join(lines))
+    await bot.send_message(chat_id, "\n".join(lines), reply_markup=main_menu())
+
+
+async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != OWNER_ID:
+        return
+    await run_check(context.bot, OWNER_ID)
 
 
 async def cmd_post(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1742,6 +1991,8 @@ def main() -> None:
     app.add_handler(CommandHandler("clear", cmd_clear))
     app.add_handler(CommandHandler("debug", cmd_debug))
     app.add_handler(CommandHandler("check", cmd_check))
+    app.add_handler(CommandHandler("menu", cmd_menu))
+    app.add_handler(CommandHandler("report", cmd_report))
     app.add_handler(CommandHandler("sources", cmd_sources))
     app.add_handler(CommandHandler("settings", cmd_settings))
     app.add_error_handler(on_error)
@@ -1754,8 +2005,11 @@ def main() -> None:
     app.job_queue.run_repeating(queue_tick, interval=60, first=20, name="queue")
     app.job_queue.run_daily(remind_pending, time=dtime(hour=10, minute=30, tzinfo=TIMEZONE),
                             name="remind")
+    app.job_queue.run_daily(weekly_report, time=dtime(hour=11, minute=0, tzinfo=TIMEZONE),
+                            days=(6,), name="report")
 
     drafts_load()
+    app.post_init = setup_commands
     log.info("бот запущен, порог актуальности %s/10", cfg()["min_score"])
     app.run_polling()
 
