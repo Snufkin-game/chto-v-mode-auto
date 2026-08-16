@@ -434,7 +434,8 @@ def build_report(days: int = 7) -> str:
 def queue_add(d: dict, when: datetime, with_poll: bool = False):
     q = _load(QUEUE_FILE, [])
     q.append({"when": when.isoformat(), "text": d["text"], "images": d["images"],
-              "title": d["entry"]["title"], "poll": with_poll})
+              "title": d["entry"]["title"], "poll": with_poll,
+              "poll_data": d.get("poll"), "slot": d.get("slot")})
     _save(QUEUE_FILE, q)
 
 
@@ -939,6 +940,12 @@ CALQUES = {
         "кто должен? скажи прямо: разглядывайте, подойдите ближе",
     r"следует|необходимо|позволяет ": "проще и по-человечески",
     r"как таковой|в свою очередь|при этом стоит": "убрать",
+    r"честно признайтесь|а признайтесь|давайте по-честному|признавайтесь":
+        "панибратство, убрать",
+    r"дорогие мои|девочки|котики|мои хорошие|друзья мои":
+        "фамильярное обращение, убрать",
+    r"пока грузим|пока варится|пока едете|между делом постирать":
+        "бытовая сценка не к месту, убрать",
     r"\bднк\b": "сказать конкретно, чем бренды разные",
     r"заговорили на одном языке|нашли общий язык": "конкретно, что у них общего",
     r"ни при чём|говорит сам за себя|больше, чем просто": "пустая фраза, убрать",
@@ -995,7 +1002,10 @@ def polish(text: str, tone: str) -> str:
    другом бренде: «два бренда с разной ДНК», «восточное побережье встретилось
    с западным», «мода ради моды тут ни при чём», «вещь говорит сама за себя».
    Если после выбрасывания пост стал короче — это нормально, так и надо.
-7. Проверь написание:
+7. Убери панибратство: «честно признайтесь», «дорогие мои», «девочки»,
+   бытовые сценки про стирку и уборку, подмигивания читателю. Канал говорит
+   с читателем на равных, как знающий человек со знающим.
+8. Проверь написание:
    - бренды и марки ЛАТИНИЦЕЙ: «Брукс Бразерс» → Brooks Brothers, «Вог» → Vogue
    - имена людей КИРИЛЛИЦЕЙ: «Barry Kosky» → Барри Коски, «Demna» → Демна
    - русские марки остаются кириллицей, как называют себя сами
@@ -1351,6 +1361,54 @@ def smm_context() -> str:
     return "\n".join(lines)
 
 
+_pool_cache: dict = {"at": None, "items": []}
+
+
+def feed_pool() -> list[dict]:
+    """Все свежие записи лент с картинками — для подбора кадра к активности."""
+    now = datetime.now(TIMEZONE)
+    if _pool_cache["at"] and (now - _pool_cache["at"]).seconds < 1800:
+        return _pool_cache["items"]
+    items = []
+    for url in feeds():
+        try:
+            feed = feedparser.parse(url)
+        except Exception:
+            continue
+        for e in feed.entries[:20]:
+            imgs = extract_images(e)
+            if not imgs:
+                continue
+            items.append({
+                "title": clean(e.get("title", "")),
+                "summary": clean(e.get("summary", ""))[:600],
+                "link": e.get("link", ""),
+                "images": imgs,
+            })
+    _pool_cache.update({"at": now, "items": items})
+    return items
+
+
+def pick_picture(query: str, want: int = 3) -> list[str]:
+    """Ищет в лентах материал по смыслу запроса и берёт оттуда картинки."""
+    words = [w for w in re.findall(r"[a-zA-Zа-яА-Я]{4,}", (query or "").lower())]
+    if not words:
+        return []
+    best, best_score = None, 0
+    for it in feed_pool():
+        hay = (it["title"] + " " + it["summary"]).lower()
+        score = sum(1 for w in words if w in hay)
+        if score > best_score:
+            best, best_score = it, score
+    if not best or best_score < 1:
+        return []
+    try:
+        return verify_images(dedupe_images(best["images"]), want=want)
+    except Exception as e:
+        log.warning("картинка к активности не подобралась: %s", e)
+        return []
+
+
 def smm_ideas(extra: str = "") -> list[dict]:
     """Три предложения по активностям — с готовым постом внутри."""
     prompt = f"""Ты SMM-менеджер телеграм-канала. Тема канала и тон:
@@ -1363,23 +1421,47 @@ def smm_ideas(extra: str = "") -> list[dict]:
 на ближайшую неделю. Не общие советы, а конкретные вещи, привязанные к данным выше:
 к сезону, к тому, что уже выходило, к формату, который лучше читают.
 
-Механики, которые работают в телеграме:
-- опрос с неочевидными вариантами
-- подборка по теме, которая уже поднималась несколько раз
-- просьба к читателям прислать своё (фото, вопрос, вариант)
+Механики, которые работают в телеграме. Возьми ТРИ РАЗНЫЕ, не три опроса:
+- загадка: показать деталь, силуэт или архивный кадр и спросить, чья это вещь
+  или какой это год. Ответ обещать в следующем посте или в комментариях
+- угадайка про цену: две похожие вещи, одна люксовая, другая масс-маркет
+- спорный вопрос на обсуждение: тезис, с которым можно не согласиться,
+  и приглашение поспорить в комментариях
+- история вещи: как появилась культовая модель, кто её придумал, почему прижилась
 - разбор по заявкам: «спрашивайте, разберу в следующем посте»
-- выбор за читателей: «о чём написать дальше»
-- итоги, рейтинг, «лучшее за месяц»
+- просьба прислать своё: фото вещи, вопрос, вариант образа
+- подборка по теме, которая уже поднималась несколько раз
+- выбор за читателей: о чём написать дальше
+- итоги, рейтинг, лучшее за месяц
 - привязка к событию из календаря моды
+- опрос с неочевидными вариантами
 
 Для каждой активности верни:
 - kind: одно слово — опрос, подборка, вопрос, конкурс, рубрика, итоги
 - why: почему именно это и именно сейчас, со ссылкой на данные выше (до 15 слов)
-- text: ГОТОВЫЙ пост для публикации, 350-700 знаков, в тоне канала.
-  Форматирование: <b>жирный</b> заголовок первой строкой, <i>курсив</i>,
-  при перечислении — разные значки. Символы & < > не используй.
-- poll: если это опрос — объект {{"question": "...", "options": ["...", "..."]}},
-  вопрос до 250 знаков, 2-4 варианта до 90 знаков. Иначе null.
+- text: ГОТОВЫЙ пост для публикации, 300-600 знаков, в тоне канала.
+  Форматирование: <b>жирный</b> заголовок первой строкой, <i>курсив</i>.
+  Символы & < > не используй.
+- poll: ТОЛЬКО если механика — опрос или угадайка с вариантами. Объект
+  {{"question": "...", "options": ["...", "..."]}}, вопрос до 250 знаков,
+  2-4 варианта до 90 знаков. Для остальных механик — null.
+- image: 3-5 слов ПО-АНГЛИЙСКИ, описывающих подходящий кадр, чтобы найти его
+  среди свежих материалов о моде. Например "runway show lace dress" или
+  "sneakers collaboration release". Если пост не требует картинки — null.
+
+ВАЖНО про опросы: варианты ответов идут ТОЛЬКО в поле poll. Телеграм покажет
+их отдельным блоком с кнопками. В тексте поста их перечислять нельзя — читатель
+увидит одно и то же дважды. Текст поста при опросе — это подводка: почему тема
+интересна и почему стоит ответить. Заканчивается приглашением проголосовать,
+без перечисления вариантов.
+
+Как писать НЕЛЬЗЯ — это звучит панибратски и снижает уровень канала:
+- «честно признайтесь», «а признайтесь», «давайте по-честному»
+- бытовые сценки вроде стирки, уборки, разбора чемодана
+- сюсюканье и подмигивания читателю
+- обращения «дорогие мои», «девочки», «котики»
+Канал о моде разговаривает с читателем на равных, как знающий человек
+со знающим. Живо — не значит по-свойски.
 
 {extra}
 
@@ -1396,7 +1478,8 @@ def smm_ideas(extra: str = "") -> list[dict]:
                 poll = None
             out.append({"kind": str(it.get("kind", "идея"))[:20],
                         "why": str(it.get("why", ""))[:120],
-                        "text": it["text"], "poll": poll})
+                        "text": it["text"], "poll": poll,
+                        "image": (str(it.get("image") or "")[:80] or None)})
         return out
     except Exception as e:
         log.warning("идеи не собрались: %s", e)
@@ -1600,12 +1683,19 @@ def post_link(sent) -> str:
 def keyboard(draft_id: str, slot: str, n_images: int = 0) -> InlineKeyboardMarkup:
     t = slot_time(slot)
     day = "завтра" if t.date() > datetime.now(TIMEZONE).date() else "сегодня"
+    d = drafts.get(draft_id, {})
+    has_poll = bool(d.get("poll"))
     rows = [[InlineKeyboardButton(f"🕒 Поставить на {t:%H:%M} ({day})",
-                                  callback_data=f"plan:{draft_id}")],
-            [InlineKeyboardButton("✅ Опубликовать сейчас", callback_data=f"pub:{draft_id}")]]
-    if slot in ("opinion", "smm"):
-        rows.append([InlineKeyboardButton("📊 Сейчас, с опросом",
+                                  callback_data=f"plan:{draft_id}")]]
+    if has_poll:                            # опрос — часть замысла, шлём вместе
+        rows.append([InlineKeyboardButton("✅ Опубликовать с опросом",
                                           callback_data=f"poll:{draft_id}")])
+    else:
+        rows.append([InlineKeyboardButton("✅ Опубликовать сейчас",
+                                          callback_data=f"pub:{draft_id}")])
+        if slot in ("opinion", "smm"):
+            rows.append([InlineKeyboardButton("📊 Сейчас, с опросом",
+                                              callback_data=f"poll:{draft_id}")])
     if n_images > 1:                       # убрать конкретное фото из карусели
         rows.append([InlineKeyboardButton(f"🗑 {i + 1}", callback_data=f"del:{draft_id}:{i}")
                      for i in range(min(n_images, 6))])
@@ -1666,7 +1756,11 @@ async def show_draft(bot, draft_id: str):
     label = STYLE_PRESETS.get(d.get("style", "base"), ("",))[0]
     head = f"⬆️ Черновик · {SLOT_NAMES.get(d['slot'], d['slot'])} · {label}\n"
     if d["slot"] == "smm" and d.get("reason"):
-        head = f"🎪 Активность · {d['entry'].get('kind', '')}\nЗачем: {d['reason']}\n"
+        kind = d["entry"].get("kind", "")
+        head = f"🎪 Активность{' · ' + kind if kind else ''}\nЗачем: {d['reason']}\n"
+        if d.get("poll"):
+            opts = " · ".join(d["poll"]["options"][:4])
+            head += f"📊 Опрос: {d['poll']['question'][:60]}\n   {opts[:90]}\n"
     left = find_calques(d["text"])
     if left:
         head += "⚠️ похоже на перевод: " + "; ".join(h.split("»")[0] + "»"
@@ -1903,16 +1997,24 @@ async def show_ideas(bot, extra: str = "") -> None:
         await bot.send_message(OWNER_ID, "Не получилось собрать идеи, попробуй ещё раз.")
         return
 
+    tone = get_tone()
     for it in ideas:
-        text = vary_bullets(ensure_format(sanitize_html(md_to_html(it["text"]))))
+        raw = it["text"]
+        if cfg().get("polish", True):
+            raw = await asyncio.to_thread(polish, raw, tone)
+        text = vary_bullets(ensure_format(sanitize_html(md_to_html(raw))))
         if SIGNATURE and SIGNATURE not in text:
             text = f"{text}\n\n{SIGNATURE}"
+        pics = []
+        if it.get("image"):
+            pics = await asyncio.to_thread(pick_picture, it["image"])
         entry = {"uid": secrets.token_hex(4), "title": it["why"][:80],
                  "summary": it["text"], "raw": it["text"], "link": "",
-                 "images": [], "source": "активность", "published": None}
+                 "images": pics, "source": "активность", "published": None,
+                 "kind": it.get("kind", "")}
         draft_id = secrets.token_hex(4)
         drafts[draft_id] = {"text": text, "entry": entry, "slot": "smm",
-                            "images": [], "score": None, "reason": it["why"],
+                            "images": pics, "score": None, "reason": it["why"],
                             "style": "base", "poll": it.get("poll")}
         last_draft["id"] = draft_id
         await show_draft(bot, draft_id)
@@ -1987,7 +2089,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         when = now.replace(hour=h, minute=m, second=0, microsecond=0)
         if when <= now + timedelta(minutes=1):
             when += timedelta(days=1)
-        queue_add(d, when, with_poll=(d["slot"] == "opinion"))
+        queue_add(d, when, with_poll=bool(d.get("poll")) or d["slot"] == "opinion")
         day = "завтра" if when.date() > now.date() else "сегодня"
         await q.edit_message_text(f"🕒 Выйдет {day} в {when:%H:%M} · в очереди {queue_size()}")
         drafts.pop(did, None)
@@ -2076,7 +2178,7 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     elif action == "plan":
         when = slot_time(d["slot"])
-        queue_add(d, when, with_poll=(d["slot"] == "opinion"))
+        queue_add(d, when, with_poll=bool(d.get("poll")) or d["slot"] == "opinion")
         day = "завтра" if when.date() > datetime.now(TIMEZONE).date() else "сегодня"
         await q.edit_message_text(f"🕒 Выйдет {day} в {when:%H:%M} · в очереди {queue_size()}")
         drafts.pop(key, None)
@@ -2121,7 +2223,7 @@ async def queue_tick(context: ContextTypes.DEFAULT_TYPE) -> None:
         remember_published(item.get("title", ""))
         link = post_link(sent)
         if item.get("poll"):
-            poll = await asyncio.to_thread(make_poll, item["text"])
+            poll = item.get("poll_data") or await asyncio.to_thread(make_poll, item["text"])
             if poll:
                 await context.bot.send_poll(CHANNEL_ID, poll["question"],
                                             poll["options"], is_anonymous=True)
