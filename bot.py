@@ -113,6 +113,8 @@ def cfg() -> dict:
     data.setdefault("plan_time", PLAN_TIME)
     data.setdefault("tgstat_token", os.environ.get("TGSTAT_TOKEN", "").strip())
     data.setdefault("polish", True)
+    data.setdefault("smm_weekly", True)
+    data.setdefault("rubrics", [])
     return data
 
 
@@ -160,7 +162,8 @@ last_draft: dict[str, str] = {}
 rotation = {"i": 0}
 
 SLOT_NAMES = {"news": "новость", "trend": "тренд", "style": "образ",
-              "opinion": "мнение", "story": "личный опыт"}
+              "opinion": "мнение", "story": "личный опыт", "smm": "активность",
+              "rubric": "рубрика", "revisit": "возврат к теме"}
 
 
 def slot_time(slot: str) -> datetime:
@@ -1061,6 +1064,28 @@ SS26 — весенне-летняя коллекция 2026, RTW — готов
     return ask(prompt, max_tokens=900)
 
 
+def build_smm_prompt(raw: str, tone: str, extra: str = "") -> str:
+    return f"""Ты SMM-менеджер телеграм-канала. Вот пост-активность, который нужно
+переписать — та же задумка, другая подача.
+
+Тон канала: {tone}
+
+Текущий вариант:
+{raw}
+
+Сохрани смысл активности, но зайди с другого угла: другой заголовок, другая
+подводка, другой призыв. Пиши живо, без канцелярита и дежурных связок вроде
+«и вот тут интересно».
+
+Требования: 350-700 знаков, первая строка — заголовок в <b></b>, абзацы по
+1-2 строки, при перечислении разные значки, не больше трёх. Из тегов только
+<b>, <i>, <blockquote>. Символы & < > в тексте не пиши. Ссылок не ставь.
+
+{extra}
+
+Верни только текст поста."""
+
+
 def build_story_prompt(raw: str, tone: str, extra: str = "") -> str:
     return f"""Ты редактор телеграм-канала. Автор канала прислала свой личный опыт
 своими словами. Преврати это в пост.
@@ -1198,7 +1223,25 @@ def build_prompt(facts: str, slot: str, tone: str, extra: str = "") -> str:
 def generate(entry: dict, slot: str, extra: str = "", style: str = "base") -> str:
     tone = STYLE_PRESETS.get(style, STYLE_PRESETS["base"])[1] or get_tone()
 
-    if slot == "story":                      # личный опыт — без извлечения фактов
+    if slot == "revisit":                    # развиваем удачную старую тему
+        text = ask(f"""Перепиши этот пост-продолжение другим заходом, сохранив тему.
+Тон: {tone}
+
+{entry.get('raw', '')}
+
+Требования: 450-750 знаков, заголовок в <b></b>, значков не больше трёх,
+только теги <b>, <i>, <blockquote>, символы & < > не писать, ссылок нет.
+{extra}
+
+Верни только текст поста.""", max_tokens=1200)
+    elif slot == "rubric":                   # выпуск постоянной рубрики
+        rub = entry.get("rubric") or {"name": entry.get("title", ""),
+                                      "brief": entry.get("summary", "")}
+        text = ask(build_rubric_prompt(rub, tone, extra), max_tokens=1200)
+    elif slot == "smm":                      # активность — переписываем идею
+        raw = entry.get("raw") or entry.get("summary", "")
+        text = ask(build_smm_prompt(raw, tone, extra), max_tokens=1200)
+    elif slot == "story":                    # личный опыт — без извлечения фактов
         raw = entry.get("raw") or entry.get("summary", "")
         text = ask(build_story_prompt(raw, tone, extra), max_tokens=1500)
     else:
@@ -1247,6 +1290,172 @@ def check_facts(post_text: str, entry: dict) -> str:
         return ask(prompt, max_tokens=700)
     except Exception as e:
         return f"Проверить не удалось: {e}"
+
+
+MONTH_CTX = {
+    1: "январь: распродажи, разбор гардероба после праздников",
+    2: "февраль: недели моды в Нью-Йорке и Лондоне, конец зимы",
+    3: "март: недели моды в Милане и Париже, переход к весне",
+    4: "апрель: весенний гардероб, курортные коллекции",
+    5: "май: Met Gala, каннская дорожка, лето на пороге",
+    6: "июнь: мужские показы, отпускной гардероб",
+    7: "июль: высокая мода в Париже, распродажи",
+    8: "август: подготовка к осени, возвращение из отпусков",
+    9: "сентябрь: недели моды, главный месяц индустрии, смена сезона",
+    10: "октябрь: осенний гардероб, верхняя одежда",
+    11: "ноябрь: чёрная пятница, подготовка к праздникам",
+    12: "декабрь: итоги года, новогодние образы, подарки",
+}
+
+
+def smm_context() -> str:
+    """Что бот знает о канале — на этом строятся предложения."""
+    rows = _load(STATS_FILE, [])
+    edge = datetime.now(TIMEZONE) - timedelta(days=21)
+    recent = []
+    for r in rows:
+        try:
+            if datetime.fromisoformat(r["at"]) >= edge:
+                recent.append(r)
+        except Exception:
+            continue
+
+    pub = [r for r in recent if r["event"] == "published"]
+    by_slot, views = {}, {}
+    for r in pub:
+        k = SLOT_NAMES.get(r.get("slot", ""), "?")
+        by_slot[k] = by_slot.get(k, 0) + 1
+        if isinstance(r.get("views"), int) and r["views"] > 0:
+            views.setdefault(k, []).append(r["views"])
+
+    lines = [f"Сегодня: {datetime.now(TIMEZONE):%d.%m.%Y, %A}",
+             f"Сезон и поводы: {MONTH_CTX.get(datetime.now(TIMEZONE).month, '')}",
+             f"Постов за три недели: {len(pub)}"]
+    if by_slot:
+        lines.append("По форматам: " + ", ".join(f"{k} — {v}" for k, v in by_slot.items()))
+    if views:
+        avg = {k: round(sum(v) / len(v)) for k, v in views.items()}
+        best = max(avg, key=avg.get)
+        lines.append("Средние просмотры: " + ", ".join(f"{k} — {v}" for k, v in avg.items()))
+        lines.append(f"Лучше всего читают: {best}")
+    else:
+        lines.append("Просмотры пока не подключены — опирайся на форматы и сезон")
+
+    titles = [r.get("title", "") for r in pub if r.get("title")][-12:]
+    if titles:
+        lines.append("О чём писали недавно:\n" + "\n".join(f"  - {t[:70]}" for t in titles))
+
+    skipped = sum(1 for r in recent if r["event"] == "skipped")
+    if skipped:
+        lines.append(f"Тем отклонено автором: {skipped}")
+    return "\n".join(lines)
+
+
+def smm_ideas(extra: str = "") -> list[dict]:
+    """Три предложения по активностям — с готовым постом внутри."""
+    prompt = f"""Ты SMM-менеджер телеграм-канала. Тема канала и тон:
+{get_tone()}
+
+Вот что известно о канале:
+{smm_context()}
+
+Предложи ТРИ активности, которые поднимут вовлечённость именно в этом канале
+на ближайшую неделю. Не общие советы, а конкретные вещи, привязанные к данным выше:
+к сезону, к тому, что уже выходило, к формату, который лучше читают.
+
+Механики, которые работают в телеграме:
+- опрос с неочевидными вариантами
+- подборка по теме, которая уже поднималась несколько раз
+- просьба к читателям прислать своё (фото, вопрос, вариант)
+- разбор по заявкам: «спрашивайте, разберу в следующем посте»
+- выбор за читателей: «о чём написать дальше»
+- итоги, рейтинг, «лучшее за месяц»
+- привязка к событию из календаря моды
+
+Для каждой активности верни:
+- kind: одно слово — опрос, подборка, вопрос, конкурс, рубрика, итоги
+- why: почему именно это и именно сейчас, со ссылкой на данные выше (до 15 слов)
+- text: ГОТОВЫЙ пост для публикации, 350-700 знаков, в тоне канала.
+  Форматирование: <b>жирный</b> заголовок первой строкой, <i>курсив</i>,
+  при перечислении — разные значки. Символы & < > не используй.
+- poll: если это опрос — объект {{"question": "...", "options": ["...", "..."]}},
+  вопрос до 250 знаков, 2-4 варианта до 90 знаков. Иначе null.
+
+{extra}
+
+Верни ТОЛЬКО JSON-массив из трёх объектов, без пояснений и без markdown."""
+    try:
+        raw = ask(prompt, max_tokens=2500)
+        data = json.loads(re.search(r"\[.*\]", raw, re.S).group(0))
+        out = []
+        for it in data[:3]:
+            if not it.get("text"):
+                continue
+            poll = it.get("poll") or None
+            if poll and (not poll.get("question") or len(poll.get("options") or []) < 2):
+                poll = None
+            out.append({"kind": str(it.get("kind", "идея"))[:20],
+                        "why": str(it.get("why", ""))[:120],
+                        "text": it["text"], "poll": poll})
+        return out
+    except Exception as e:
+        log.warning("идеи не собрались: %s", e)
+        return []
+
+
+WEEKDAYS = {"понедельник": 0, "вторник": 1, "среда": 2, "четверг": 3,
+            "пятница": 4, "суббота": 5, "воскресенье": 6}
+WD_NAMES = {v: k for k, v in WEEKDAYS.items()}
+
+
+def build_rubric_prompt(rub: dict, tone: str, extra: str = "") -> str:
+    return f"""Ты ведёшь телеграм-канал. Сегодня выходит постоянная рубрика.
+
+Тон канала: {tone}
+
+Рубрика: {rub['name']}
+О чём она: {rub['brief']}
+
+Напиши сегодняшний выпуск. Он должен быть узнаваемым как часть рубрики, но
+не повторять прошлые: другая вещь, другой пример, другой угол.
+
+Требования: 450-750 знаков, первая строка — заголовок в <b></b> с названием
+рубрики или отсылкой к ней, абзацы по 1-2 строки, конкретика вместо общих слов,
+при перечислении разные значки, не больше трёх. Из тегов только <b>, <i>,
+<blockquote>. Символы & < > не пиши. Ссылок не ставь. Без дежурных связок
+вроде «и вот тут интересно».
+
+{extra}
+
+Верни только текст поста."""
+
+
+async def rubric_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Проверяет раз в день, не пора ли выпустить рубрику."""
+    today = datetime.now(TIMEZONE).weekday()
+    for rub in cfg().get("rubrics", []):
+        if rub.get("weekday") != today:
+            continue
+        tone = get_tone()
+        try:
+            raw = await asyncio.to_thread(
+                lambda: ask(build_rubric_prompt(rub, tone), max_tokens=1200))
+        except Exception as e:
+            await context.bot.send_message(OWNER_ID, explain_api_error(e))
+            continue
+        if cfg().get("polish", True):
+            raw = await asyncio.to_thread(polish, raw, tone)
+        text = vary_bullets(ensure_format(sanitize_html(md_to_html(raw))))
+        if SIGNATURE and SIGNATURE not in text:
+            text = f"{text}\n\n{SIGNATURE}"
+        entry = {"uid": secrets.token_hex(4), "title": rub["name"],
+                 "summary": rub["brief"], "raw": rub["brief"], "link": "",
+                 "images": [], "source": "рубрика", "published": None, "rubric": rub}
+        did = secrets.token_hex(4)
+        drafts[did] = {"text": text, "entry": entry, "slot": "rubric", "images": [],
+                       "score": None, "reason": rub["name"], "style": "base"}
+        last_draft["id"] = did
+        await show_draft(context.bot, did)
 
 
 def make_poll(post_text: str) -> dict | None:
@@ -1394,7 +1603,7 @@ def keyboard(draft_id: str, slot: str, n_images: int = 0) -> InlineKeyboardMarku
     rows = [[InlineKeyboardButton(f"🕒 Поставить на {t:%H:%M} ({day})",
                                   callback_data=f"plan:{draft_id}")],
             [InlineKeyboardButton("✅ Опубликовать сейчас", callback_data=f"pub:{draft_id}")]]
-    if slot == "opinion":
+    if slot in ("opinion", "smm"):
         rows.append([InlineKeyboardButton("📊 Сейчас, с опросом",
                                           callback_data=f"poll:{draft_id}")])
     if n_images > 1:                       # убрать конкретное фото из карусели
@@ -1456,6 +1665,8 @@ async def show_draft(bot, draft_id: str):
 
     label = STYLE_PRESETS.get(d.get("style", "base"), ("",))[0]
     head = f"⬆️ Черновик · {SLOT_NAMES.get(d['slot'], d['slot'])} · {label}\n"
+    if d["slot"] == "smm" and d.get("reason"):
+        head = f"🎪 Активность · {d['entry'].get('kind', '')}\nЗачем: {d['reason']}\n"
     left = find_calques(d["text"])
     if left:
         head += "⚠️ похоже на перевод: " + "; ".join(h.split("»")[0] + "»"
@@ -1493,7 +1704,7 @@ async def publish(bot, d: dict, with_poll: bool = False):
             f"Пост в канале: {link}\nОткрой, чтобы добавить премиум-эмодзи 💫",
             link_preview_options=LinkPreviewOptions(is_disabled=True))
     if with_poll:
-        poll = await asyncio.to_thread(make_poll, d["text"])
+        poll = d.get("poll") or await asyncio.to_thread(make_poll, d["text"])
         if poll:
             await bot.send_poll(CHANNEL_ID, poll["question"], poll["options"],
                                 is_anonymous=True)
@@ -1543,6 +1754,174 @@ async def build_draft(bot, slot: str) -> None:
         OWNER_ID,
         f"Проверила {len(rejected)} тем — подходящих нет.\n\n{note}\n\n"
         f"Порог сейчас {MIN_SCORE}/10, меняется переменной MIN_SCORE.")
+
+
+def best_old_post() -> dict | None:
+    """Самый читаемый пост старше месяца — тему стоит развить."""
+    rows = _load(STATS_FILE, [])
+    now = datetime.now(TIMEZONE)
+    old = []
+    for r in rows:
+        if r.get("event") != "published" or not isinstance(r.get("views"), int):
+            continue
+        try:
+            age = (now - datetime.fromisoformat(r["at"])).days
+        except Exception:
+            continue
+        if 30 <= age <= 180 and r.get("title"):
+            old.append(r)
+    if not old:
+        return None
+    avg = sum(r["views"] for r in old) / len(old)
+    top = max(old, key=lambda r: r["views"])
+    return top if top["views"] > avg * 1.3 else None
+
+
+async def show_revisit(bot) -> None:
+    top = best_old_post()
+    if not top:
+        await bot.send_message(
+            OWNER_ID,
+            "Пока нечего возвращать: нужны просмотры хотя бы за месяц-полтора. "
+            "Подключить их — /settings → Просмотры.")
+        return
+    tone = get_tone()
+    prompt = f"""Ты ведёшь телеграм-канал. Тон: {tone}
+
+Месяц назад в канале хорошо зашёл пост: «{top['title']}» — {top['views']} просмотров,
+заметно выше обычного.
+
+Напиши продолжение этой темы: развей её с другой стороны, добавь то, что не
+влезло, или посмотри, что изменилось с тех пор. Это не повтор, а следующая серия.
+
+В первой строке заголовок в <b></b>. Можно сослаться на прошлый раз одной фразой,
+но пост должен читаться самостоятельно.
+
+Требования: 450-750 знаков, абзацы по 1-2 строки, конкретика вместо общих слов,
+значков не больше трёх и все разные. Из тегов только <b>, <i>, <blockquote>.
+Символы & < > не пиши. Ссылок не ставь.
+
+Верни только текст поста."""
+    try:
+        raw = await asyncio.to_thread(lambda: ask(prompt, max_tokens=1200))
+    except Exception as e:
+        await bot.send_message(OWNER_ID, explain_api_error(e))
+        return
+    if cfg().get("polish", True):
+        raw = await asyncio.to_thread(polish, raw, tone)
+    text = vary_bullets(ensure_format(sanitize_html(md_to_html(raw))))
+    if SIGNATURE and SIGNATURE not in text:
+        text = f"{text}\n\n{SIGNATURE}"
+    entry = {"uid": secrets.token_hex(4), "title": top["title"],
+             "summary": top["title"], "raw": top["title"], "link": "",
+             "images": [], "source": "возврат к теме", "published": None}
+    did = secrets.token_hex(4)
+    drafts[did] = {"text": text, "entry": entry, "slot": "revisit", "images": [],
+                   "score": None, "reason": f"{top['views']} просмотров месяц назад",
+                   "style": "base"}
+    last_draft["id"] = did
+    await show_draft(bot, did)
+
+
+def tgstat_channel_stat() -> dict:
+    """Подписчики и средний охват — для ответа рекламодателю."""
+    token = cfg().get("tgstat_token", "").strip()
+    if not token:
+        return {}
+    try:
+        r = requests.get("https://api.tgstat.ru/channels/stat",
+                         params={"token": token, "channel": str(CHANNEL_ID)}, timeout=25)
+        data = r.json()
+        return (data.get("response") or {}) if data.get("status") == "ok" else {}
+    except Exception as e:
+        log.warning("TGStat stat: %s", e)
+        return {}
+
+
+async def show_ad_reply(bot, ask_text: str = "") -> None:
+    """Готовит ответ рекламодателю с актуальными цифрами канала."""
+    await bot.send_message(OWNER_ID, "💼 Собираю цифры канала…")
+    st = await asyncio.to_thread(tgstat_channel_stat)
+
+    rows = _load(STATS_FILE, [])
+    now = datetime.now(TIMEZONE)
+    month = [r for r in rows if r.get("event") == "published"
+             and isinstance(r.get("views"), int)
+             and (now - datetime.fromisoformat(r["at"])).days <= 30]
+    own_avg = round(sum(r["views"] for r in month) / len(month)) if month else 0
+
+    facts = []
+    if st.get("participants_count"):
+        facts.append(f"подписчиков: {st['participants_count']}")
+    if st.get("avg_post_reach"):
+        facts.append(f"средний охват поста: {st['avg_post_reach']}")
+    if st.get("err_percent"):
+        facts.append(f"ERR: {st['err_percent']}%")
+    if own_avg:
+        facts.append(f"средние просмотры за месяц по моим данным: {own_avg}")
+    facts.append(f"постов в день: {len(cfg()['times'])}")
+    known = "; ".join(facts) if facts else "точных цифр пока нет"
+
+    prompt = f"""Ты помогаешь автору телеграм-канала ответить на запрос о рекламе.
+
+Что известно о канале: {known}
+Тема и тон канала: {get_tone()}
+
+{"Рекламодатель написал: " + ask_text if ask_text else "Запрос общий, деталей нет."}
+
+Напиши ответ рекламодателю: деловой, доброжелательный, без заискивания и без
+пафоса. Структура: короткое приветствие, цифры канала, что можешь предложить
+по форматам размещения, вопрос о продукте и желаемых сроках.
+
+Цену не называй — её автор поставит сам, оставь для неё место в виде фразы
+о том, что стоимость зависит от формата и сроков.
+
+Ничего не выдумывай сверх цифр выше. Если цифры отсутствуют, напиши, что
+пришлёшь статистику отдельно.
+
+Обычный текст без тегов и разметки, 600-900 знаков. Верни только сам ответ."""
+    try:
+        text = await asyncio.to_thread(lambda: ask(prompt, max_tokens=1200))
+    except Exception as e:
+        await bot.send_message(OWNER_ID, explain_api_error(e))
+        return
+
+    head = "💼 Черновик ответа рекламодателю\n"
+    head += ("Цифры: " + known if facts else "Статистика не подключена")
+    await bot.send_message(OWNER_ID, head)
+    await bot.send_message(OWNER_ID, text,
+                           link_preview_options=LinkPreviewOptions(is_disabled=True))
+    await bot.send_message(
+        OWNER_ID, "Скопируйте и допишите цену. Если хотите ответ под конкретный "
+                  "запрос — пришлите /ad и текст письма рекламодателя.")
+
+
+async def show_ideas(bot, extra: str = "") -> None:
+    await bot.send_message(OWNER_ID, "🎪 Смотрю, что происходит в канале…")
+    ideas = await asyncio.to_thread(smm_ideas, extra)
+    if not ideas:
+        await bot.send_message(OWNER_ID, "Не получилось собрать идеи, попробуй ещё раз.")
+        return
+
+    for it in ideas:
+        text = vary_bullets(ensure_format(sanitize_html(md_to_html(it["text"]))))
+        if SIGNATURE and SIGNATURE not in text:
+            text = f"{text}\n\n{SIGNATURE}"
+        entry = {"uid": secrets.token_hex(4), "title": it["why"][:80],
+                 "summary": it["text"], "raw": it["text"], "link": "",
+                 "images": [], "source": "активность", "published": None}
+        draft_id = secrets.token_hex(4)
+        drafts[draft_id] = {"text": text, "entry": entry, "slot": "smm",
+                            "images": [], "score": None, "reason": it["why"],
+                            "style": "base", "poll": it.get("poll")}
+        last_draft["id"] = draft_id
+        await show_draft(bot, draft_id)
+        await asyncio.sleep(1)
+
+    await bot.send_message(
+        OWNER_ID,
+        "Это предложения на неделю. Публиковать все сразу не нужно — "
+        "выбери одно-два и поставь на удобное время.")
 
 
 async def send_draft(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1789,6 +2168,55 @@ async def watchdog(context: ContextTypes.DEFAULT_TYPE) -> None:
             reply_markup=main_menu())
 
 
+def views_trend() -> tuple[int, int, int]:
+    """Средние просмотры за прошлую неделю и позапрошлую. (было, стало, %)"""
+    rows = _load(STATS_FILE, [])
+    now = datetime.now(TIMEZONE)
+    cur, prev = [], []
+    for r in rows:
+        if r.get("event") != "published" or not isinstance(r.get("views"), int):
+            continue
+        try:
+            when = datetime.fromisoformat(r["at"])
+        except Exception:
+            continue
+        age = (now - when).days
+        if age <= 7:
+            cur.append(r["views"])
+        elif age <= 14:
+            prev.append(r["views"])
+    if len(cur) < 2 or len(prev) < 2:
+        return 0, 0, 0
+    a, b = sum(prev) / len(prev), sum(cur) / len(cur)
+    return round(a), round(b), round((b - a) / a * 100)
+
+
+async def slump_watch(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Замечает остывание канала и сам предлагает, что делать."""
+    was, now_, delta = views_trend()
+    if not was or delta > -20:
+        return
+    last = _load(os.path.join(DATA_DIR, "slump.json"), {}).get("at", "")
+    try:
+        if last and (datetime.now(TIMEZONE) - datetime.fromisoformat(last)).days < 10:
+            return                                   # не дёргаем чаще раза в декаду
+    except Exception:
+        pass
+    _save(os.path.join(DATA_DIR, "slump.json"),
+          {"at": datetime.now(TIMEZONE).isoformat()})
+
+    await context.bot.send_message(
+        OWNER_ID,
+        f"📉 Канал остывает\n\n"
+        f"Средние просмотры: было {was}, стало {now_} ({delta}%).\n"
+        f"Обычно помогает что-то с вовлечением — сейчас подберу.")
+    await asyncio.sleep(2)
+    await show_ideas(context.bot,
+                     "Канал остывает: просмотры упали. Предложи активности, "
+                     "которые возвращают внимание — с вопросом, выбором или "
+                     "поводом ответить в комментариях.")
+
+
 async def remind_pending(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Утренний пинг, если черновики так и висят без ответа."""
     live = [v for k, v in drafts.items() if isinstance(v, dict) and v.get("text")]
@@ -1979,6 +2407,9 @@ def settings_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(
             "👁 Просмотры: " + ("подключены" if cfg().get("tgstat_token") else "выкл"),
             callback_data="set:tgstat")],
+        [InlineKeyboardButton(
+            "🎪 Идеи активностей по воскресеньям: " + ("вкл" if c.get("smm_weekly", True) else "выкл"),
+            callback_data="set:smmw")],
         [InlineKeyboardButton("📡 Источники", callback_data="set:src")],
     ])
 
@@ -2020,6 +2451,27 @@ async def on_settings_button(update: Update, context: ContextTypes.DEFAULT_TYPE)
     """Обрабатывает кнопки настроек. True — если кнопка была отсюда."""
     q = update.callback_query
     data = q.data
+
+    if data.startswith("rub:"):
+        parts = data.split(":")
+        if parts[1] == "add":
+            waiting[OWNER_ID] = "rubric"
+            await q.edit_message_text(
+                "Пришлите рубрику одной строкой через вертикальную черту:\n\n"
+                "<i>Название | день недели | о чём она</i>\n\n"
+                "Например:\n"
+                "<i>Образ недели | вторник | разбор одного лука с показа, "
+                "как повторить дешевле</i>\n\n"
+                "Отмена — /rubrics", parse_mode=ParseMode.HTML)
+        elif parts[1] == "del":
+            rs = cfg().get("rubrics", [])
+            i = int(parts[2])
+            if 0 <= i < len(rs):
+                rs.pop(i)
+                cfg_set(rubrics=rs)
+            await q.edit_message_text(rubrics_text(), reply_markup=rubrics_menu(),
+                                      parse_mode=ParseMode.HTML)
+        return True
 
     if data.startswith("src:"):
         parts = data.split(":")
@@ -2089,6 +2541,14 @@ async def on_settings_button(update: Update, context: ContextTypes.DEFAULT_TYPE)
                  "🗣 Правка выключена: посты идут как написались, дешевле, "
                  "но текст ближе к переводу."),
                 reply_markup=settings_menu())
+        elif what == "smmw":
+            new = not cfg().get("smm_weekly", True)
+            cfg_set(smm_weekly=new)
+            await q.edit_message_text(
+                ("🎪 По воскресеньям вместе с отчётом буду присылать три идеи "
+                 "активностей на неделю." if new else
+                 "🎪 Идеи по расписанию отключены. Запросить вручную — /smm"),
+                reply_markup=settings_menu())
         elif what == "tgstat":
             waiting[OWNER_ID] = "tgstat"
             await q.edit_message_text(
@@ -2116,6 +2576,30 @@ async def handle_waiting(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return False
     text = (update.message.text or "").strip()
     waiting.pop(OWNER_ID, None)
+
+    if mode == "rubric":
+        parts = [p.strip() for p in text.split("|")]
+        if len(parts) < 3:
+            await update.message.reply_text(
+                "Нужны три части через | — название, день недели, о чём.\n"
+                "Попробуйте ещё раз или /rubrics для отмены.")
+            waiting[OWNER_ID] = "rubric"
+            return True
+        name, day, brief = parts[0], parts[1].lower(), " | ".join(parts[2:])
+        wd = next((v for k, v in WEEKDAYS.items() if k.startswith(day[:5])), None)
+        if wd is None:
+            await update.message.reply_text(
+                "Не поняла день недели. Напишите словом: понедельник, вторник и так далее.")
+            waiting[OWNER_ID] = "rubric"
+            return True
+        rs = cfg().get("rubrics", [])
+        rs.append({"name": name[:60], "weekday": wd, "brief": brief[:400]})
+        cfg_set(rubrics=rs)
+        await update.message.reply_text(
+            f"✅ Рубрика «{name}» будет выходить в {WD_NAMES[wd]}.\n"
+            f"Черновик придёт утром в этот день.",
+            reply_markup=rubrics_menu())
+        return True
 
     if mode == "tgstat":
         if text.lower() in ("выкл", "off", "нет", "-"):
@@ -2216,7 +2700,11 @@ def main_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("✍️ Сделать пост", callback_data="m:now"),
          InlineKeyboardButton("🌙 Посты на завтра", callback_data="m:plan")],
-        [InlineKeyboardButton("📖 Личный опыт", callback_data="m:story")],
+        [InlineKeyboardButton("📖 Личный опыт", callback_data="m:story"),
+         InlineKeyboardButton("🎪 Активности", callback_data="m:smm")],
+        [InlineKeyboardButton("🔁 Рубрики", callback_data="m:rub"),
+         InlineKeyboardButton("♻️ Вернуть тему", callback_data="m:revisit")],
+        [InlineKeyboardButton("💼 Ответ рекламодателю", callback_data="m:ad")],
         [InlineKeyboardButton("🕒 Очередь", callback_data="m:queue"),
          InlineKeyboardButton("📊 Отчёт", callback_data="m:report")],
         [InlineKeyboardButton("📡 Источники", callback_data="m:src"),
@@ -2277,6 +2765,18 @@ async def on_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "Можно сумбурно и с деталями: что искала, что не получилось, "
             "что в итоге. Я соберу это в пост и ничего не придумаю от себя.\n\n"
             "Отмена — /menu")
+    elif what == "smm":
+        await q.edit_message_text("🎪 Собираю предложения…")
+        await show_ideas(context.bot)
+    elif what == "rub":
+        await q.edit_message_text(rubrics_text(), reply_markup=rubrics_menu(),
+                                  parse_mode=ParseMode.HTML)
+    elif what == "revisit":
+        await q.edit_message_text("♻️ Ищу удачную старую тему…")
+        await show_revisit(context.bot)
+    elif what == "ad":
+        await q.edit_message_text("💼 Готовлю ответ…")
+        await show_ad_reply(context.bot)
     elif what == "queue":
         rows = sorted(_load(QUEUE_FILE, []), key=lambda i: i["when"])
         if rows:
@@ -2328,6 +2828,10 @@ async def setup_commands(app) -> None:
         BotCommand("menu", "Меню — все возможности"),
         BotCommand("now", "Сделать пост сейчас"),
         BotCommand("story", "Пост из личного опыта"),
+        BotCommand("smm", "Идеи активностей для канала"),
+        BotCommand("rubrics", "Постоянные рубрики"),
+        BotCommand("revisit", "Вернуться к удачной теме"),
+        BotCommand("ad", "Ответ рекламодателю"),
         BotCommand("plan", "Посты на завтра"),
         BotCommand("queue", "Очередь публикаций"),
         BotCommand("report", "Отчёт за неделю"),
@@ -2428,6 +2932,9 @@ async def cmd_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 async def weekly_report(context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(OWNER_ID, build_report(7))
+    if cfg().get("smm_weekly", True):
+        await asyncio.sleep(2)
+        await show_ideas(context.bot)
 
 
 async def run_check(bot, chat_id: int) -> None:
@@ -2470,6 +2977,56 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_user.id != OWNER_ID:
         return
     await run_check(context.bot, OWNER_ID)
+
+
+async def cmd_smm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Предложения по активностям для канала."""
+    if update.effective_user.id != OWNER_ID:
+        return
+    await show_ideas(context.bot)
+
+
+async def cmd_ad(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != OWNER_ID:
+        return
+    body = (update.message.text or "").partition(" ")[2].strip()
+    await show_ad_reply(context.bot, body)
+
+
+async def cmd_revisit(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != OWNER_ID:
+        return
+    await update.message.reply_text("Ищу удачную старую тему…")
+    await show_revisit(context.bot)
+
+
+def rubrics_text() -> str:
+    rs = cfg().get("rubrics", [])
+    if not rs:
+        return ("Постоянных рубрик пока нет.\n\n"
+                "Рубрика — это регулярный пост в один и тот же день недели. "
+                "Читатели привыкают и ждут: «по вторникам — образ недели».\n\n"
+                "Добавить: пришлите строку вида\n"
+                "<i>Образ недели | вторник | разбор одного лука с показа, "
+                "как повторить дешевле</i>")
+    return "Рубрики:\n\n" + "\n".join(
+        f"{i + 1}. <b>{r['name']}</b> — {WD_NAMES.get(r['weekday'], '?')}\n"
+        f"   {r['brief'][:80]}" for i, r in enumerate(rs))
+
+
+def rubrics_menu() -> InlineKeyboardMarkup:
+    rows = [[InlineKeyboardButton("➕ Добавить рубрику", callback_data="rub:add")]]
+    for i, r in enumerate(cfg().get("rubrics", [])[:8]):
+        rows.append([InlineKeyboardButton(f"🗑 {r['name'][:26]}", callback_data=f"rub:del:{i}")])
+    rows.append([InlineKeyboardButton("‹ меню", callback_data="m:back")])
+    return InlineKeyboardMarkup(rows)
+
+
+async def cmd_rubrics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_user.id != OWNER_ID:
+        return
+    await update.message.reply_text(rubrics_text(), reply_markup=rubrics_menu(),
+                                    parse_mode=ParseMode.HTML)
 
 
 async def cmd_story(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2540,6 +3097,10 @@ def main() -> None:
     app.add_handler(CommandHandler("now", cmd_now))
     app.add_handler(CommandHandler("post", cmd_post))
     app.add_handler(CommandHandler("story", cmd_story))
+    app.add_handler(CommandHandler("smm", cmd_smm))
+    app.add_handler(CommandHandler("ad", cmd_ad))
+    app.add_handler(CommandHandler("revisit", cmd_revisit))
+    app.add_handler(CommandHandler("rubrics", cmd_rubrics))
     app.add_handler(CommandHandler("plan", cmd_plan))
     app.add_handler(CommandHandler("queue", cmd_queue))
     app.add_handler(CommandHandler("clear", cmd_clear))
@@ -2558,6 +3119,10 @@ def main() -> None:
 
     app.job_queue.run_repeating(queue_tick, interval=60, first=20, name="queue")
     app.job_queue.run_once(hello_on_start, when=5, name="hello")
+    app.job_queue.run_daily(rubric_job, time=dtime(hour=8, minute=30, tzinfo=TIMEZONE),
+                            name="rubrics")
+    app.job_queue.run_daily(slump_watch, time=dtime(hour=12, minute=30, tzinfo=TIMEZONE),
+                            name="slump")
     app.job_queue.run_daily(watchdog, time=dtime(hour=12, minute=0, tzinfo=TIMEZONE),
                             name="watchdog")
     app.job_queue.run_daily(remind_pending, time=dtime(hour=10, minute=30, tzinfo=TIMEZONE),
