@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RangeMedia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="RangeMedia — маркетинговое агентство полного цикла. Блогеры и СМИ, производство контента, мероприятия, реклама и ИИ-аватары в России и за рубежом.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: светлая «бумага» с синим отливом, огромная прописная типографика, одна кобальтовая панель с живыми линиями-хребтами (Range), тёмно-синий блок флагманского проекта, затем строгие списки. */
+:root{
+  --paper:#EEF1F6; --paper-2:#E2E7F0; --ink:#0A1433; --ink-soft:#4B5675; --line:#C5CEDE;
+  --cobalt:#1F3BE0; --cobalt-deep:#132AB0; --navy:#08122E; --ice:#DCE4FF; --on-dark:#EEF2FF; --on-dark-soft:#9EABD3;
+  --f-display:"Onest","Helvetica Neue",Arial,sans-serif;
+  --f-serif:"Cormorant Garamond","Times New Roman",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --gut:max(16px, env(safe-area-inset-left,0px));
+  --gut-r:max(16px, env(safe-area-inset-right,0px));
+  --wrap:1320px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#060B1A; --paper-2:#0C1430; --ink:#E7ECFA; --ink-soft:#97A3C4; --line:#222D4C;
+  --cobalt:#3352FF; --cobalt-deep:#1D36C9; --navy:#0C1840; --ice:#DCE4FF; --on-dark:#EEF2FF; --on-dark-soft:#9EABD3; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#060B1A; --paper-2:#0C1430; --ink:#E7ECFA; --ink-soft:#97A3C4; --line:#222D4C;
+  --cobalt:#3352FF; --cobalt-deep:#1D36C9; --navy:#0C1840; --ice:#DCE4FF; --on-dark:#EEF2FF; --on-dark-soft:#9EABD3; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--paper)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--cobalt);outline-offset:3px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-left:var(--gut);padding-right:var(--gut-r)}
+.mono{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.serif{font-family:var(--f-serif);font-style:italic;font-weight:500;text-transform:none;letter-spacing:-.01em}
+h1,h2,h3{margin:0;font-weight:500;text-wrap:balance}
+p{margin:0}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:999px;font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;border:1px solid var(--ink);transition:background .25s,color .25s,border-color .25s}
+.btn--solid{background:var(--cobalt);border-color:var(--cobalt);color:#fff}
+.btn--solid:hover{background:var(--cobalt-deep);border-color:var(--cobalt-deep)}
+.btn--ghost:hover{background:var(--ink);color:var(--paper)}
+.btn .arr{transition:transform .25s}
+.btn:hover .arr{transform:translateX(4px)}
+
+/* Header */
+.hdr{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.hdr .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-block:14px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;letter-spacing:.02em;font-size:18px}
+.logo b{font-weight:700}.logo span{font-weight:300}
+.logo-mark{width:26px;height:26px;flex:none}
+.nav{display:flex;gap:28px}
+.nav a{text-decoration:none;font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);transition:color .2s}
+.nav a:hover{color:var(--ink)}
+.hdr .btn{padding:10px 18px}
+@media (max-width:900px){.nav{display:none}}
+@media (max-width:420px){.hdr .btn .lbl-long{display:none}}
+
+/* Hero */
+.hero{padding-block:clamp(40px,7vw,96px) 32px}
+.hero-top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--ink-soft);margin-bottom:clamp(28px,4vw,48px)}
+.hero h1{font-size:clamp(44px,9.2vw,148px);line-height:.92;letter-spacing:-.045em;text-transform:uppercase;font-weight:500}
+.hero h1 .serif{color:var(--cobalt);font-size:1.08em;letter-spacing:-.03em}
+.hero-row{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:32px;margin-top:clamp(28px,4vw,56px);align-items:end}
+.hero-row p{font-size:15px;color:var(--ink-soft);max-width:36ch}
+.hero-row p strong{color:var(--ink);font-weight:500}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+@media (max-width:900px){.hero-row{grid-template-columns:1fr}}
+
+/* Range panel */
+.range{position:relative;margin-top:8px;border-radius:20px;overflow:hidden;background:var(--cobalt);color:#fff;aspect-ratio:16/7;min-height:340px;max-width:100%}
+.range canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.range-ui{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(18px,3vw,36px)}
+.range-ui .row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:999px;padding:8px 14px;color:#fff}
+.range-big{font-size:clamp(28px,4.4vw,64px);line-height:1;letter-spacing:-.03em;font-weight:500;max-width:14ch}
+@media (max-width:600px){.range{aspect-ratio:auto;min-height:420px}}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);margin-top:40px}
+.stat{padding:22px 20px 6px 0;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;min-width:0}
+.stat:not(:first-child){padding-left:20px}
+.stat:last-child{border-right:0}
+.stat b{font-size:clamp(28px,3vw,44px);font-weight:500;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--ink-soft)}
+@media (max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.stat{border-right:0;border-bottom:1px solid var(--line);padding-left:0!important}.stat:last-child{grid-column:1/-1;border-bottom:0}}
+
+/* Marquee */
+.marquee{overflow:hidden;border-block:1px solid var(--line);margin-top:72px;padding-block:18px;white-space:nowrap}
+.marquee-track{display:inline-flex;gap:48px;animation:mq 38s linear infinite;padding-left:48px}
+.marquee-track span{font-size:clamp(22px,2.6vw,34px);letter-spacing:-.02em;text-transform:uppercase;display:inline-flex;align-items:center;gap:48px}
+.marquee-track span::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--cobalt)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* Section scaffolding */
+section{scroll-margin-top:80px}
+.sec{padding-block:clamp(72px,10vw,140px)}
+.sec-head{display:grid;grid-template-columns:240px 1fr;gap:32px;margin-bottom:clamp(36px,5vw,64px);align-items:start}
+.sec-head .mono{color:var(--ink-soft);padding-top:10px}
+.sec-head h2{font-size:clamp(34px,5vw,72px);line-height:.98;letter-spacing:-.035em;text-transform:uppercase}
+.sec-head h2 .serif{color:var(--cobalt)}
+@media (max-width:760px){.sec-head{grid-template-columns:1fr;gap:12px}}
+
+/* About */
+.about-grid{display:grid;grid-template-columns:240px 1fr;gap:32px}
+.about-lead{font-size:clamp(24px,2.9vw,42px);line-height:1.18;letter-spacing:-.02em;max-width:28ch}
+.about-lead em{font-family:var(--f-serif);font-weight:500;color:var(--cobalt)}
+.about-cols{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:48px;max-width:860px}
+.about-cols p{color:var(--ink-soft);font-size:15px}
+@media (max-width:760px){.about-grid,.about-cols{grid-template-columns:1fr}}
+
+/* Services list */
+.svc{border-top:1px solid var(--line)}
+.svc-row{display:grid;grid-template-columns:140px 1fr minmax(0,380px);gap:24px;align-items:center;padding-block:22px;border-bottom:1px solid var(--line);position:relative;transition:padding .35s}
+.svc-row .mono{color:var(--ink-soft)}
+.svc-row h3{font-size:clamp(32px,5.4vw,80px);line-height:1;letter-spacing:-.04em;text-transform:uppercase;transition:color .3s,transform .35s}
+.svc-row p{font-size:15px;color:var(--ink-soft);min-width:0}
+.svc-row:hover h3{color:var(--cobalt);transform:translateX(10px)}
+.svc-row.is-new h3::after{content:"new";font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;vertical-align:top;margin-left:10px;padding:4px 8px;border-radius:999px;background:var(--cobalt);color:#fff;position:relative;top:.6em}
+@media (max-width:860px){.svc-row{grid-template-columns:1fr;gap:8px}}
+
+/* Flagship */
+.flag{background:var(--navy);color:var(--on-dark);border-radius:24px;overflow:hidden;position:relative}
+.flag-inner{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(32px,5vw,80px);padding:clamp(28px,5vw,72px)}
+.flag .mono{color:var(--on-dark-soft)}
+.flag h2{font-size:clamp(44px,7.4vw,118px);line-height:.9;letter-spacing:-.045em;text-transform:uppercase;margin-top:20px}
+.flag h2 .serif{color:var(--ice)}
+.flag-lead{font-size:clamp(18px,1.6vw,22px);line-height:1.45;margin-top:28px;max-width:40ch}
+.flag-since{display:inline-flex;align-items:center;gap:10px;margin-top:28px;padding:10px 16px;border:1px solid rgba(255,255,255,.22);border-radius:999px}
+.flag-since i{width:8px;height:8px;border-radius:50%;background:#5CF0A6;box-shadow:0 0 0 4px rgba(92,240,166,.18)}
+.flag ul{list-style:none;margin:0;padding:0;border-top:1px solid rgba(255,255,255,.16)}
+.flag li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding-block:20px;border-bottom:1px solid rgba(255,255,255,.16)}
+.flag li .mono{padding-top:4px}
+.flag li b{display:block;font-weight:500;font-size:19px;letter-spacing:-.01em;margin-bottom:4px}
+.flag li p{color:var(--on-dark-soft);font-size:14px}
+.flag-glow{position:absolute;width:620px;height:620px;right:-200px;top:-260px;border-radius:50%;background:radial-gradient(closest-side,rgba(51,82,255,.55),transparent);pointer-events:none}
+@media (max-width:900px){.flag-inner{grid-template-columns:1fr}}
+
+/* Advantages */
+.adv{display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line)}
+.adv-item{padding:36px 36px 40px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:14px;min-width:0}
+.adv-item:nth-child(odd){border-right:1px solid var(--line)}
+.adv-item:nth-child(even){padding-left:36px;padding-right:0}
+.adv-item .serif{font-size:clamp(30px,3.4vw,46px);line-height:1;color:var(--cobalt)}
+.adv-item h3{font-size:22px;letter-spacing:-.015em}
+.adv-item p{color:var(--ink-soft);max-width:46ch;font-size:15px}
+@media (max-width:760px){.adv{grid-template-columns:1fr}.adv-item,.adv-item:nth-child(even){padding:28px 0;border-right:0}}
+
+/* Process */
+.proc{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.step{background:var(--paper-2);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:40px;min-height:230px;min-width:0;transition:background .3s,color .3s}
+.step:hover{background:var(--cobalt);color:#fff}
+.step:hover p,.step:hover .mono{color:rgba(255,255,255,.8)}
+.step .mono{color:var(--ink-soft)}
+.step h3{font-size:22px;letter-spacing:-.02em;margin-top:auto}
+.step p{font-size:14px;color:var(--ink-soft);margin-top:8px}
+@media (max-width:1000px){.proc{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.proc{grid-template-columns:1fr}.step{min-height:0;gap:24px}}
+
+/* Cases */
+.case-feature{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,56px);background:var(--paper-2);border-radius:20px;padding:clamp(24px,4vw,48px);margin-bottom:40px}
+.case-feature h3{font-size:clamp(36px,4.6vw,64px);letter-spacing:-.04em;line-height:1;text-transform:uppercase;margin-top:14px}
+.case-feature p{color:var(--ink-soft);font-size:15px;max-width:52ch}
+.case-feature .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.tag{border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--ink)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border-radius:14px;overflow:hidden;align-self:start}
+.kpis div{background:var(--paper);padding:20px}
+.kpis b{display:block;font-size:26px;font-weight:500;letter-spacing:-.02em}
+.kpis span{font-size:13px;color:var(--ink-soft)}
+@media (max-width:860px){.case-feature{grid-template-columns:1fr}}
+
+.tbl-wrap{overflow-x:auto;border-top:1px solid var(--ink)}
+table{width:100%;border-collapse:collapse;min-width:720px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:400;padding:14px 12px 14px 0;border-bottom:1px solid var(--line)}
+td{padding:18px 12px 18px 0;border-bottom:1px solid var(--line);vertical-align:top;font-size:15px}
+td.name{font-size:20px;letter-spacing:-.015em;font-weight:500}
+td.name small{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:400;margin-top:2px}
+td.num{text-align:right;white-space:nowrap}
+th.num{text-align:right}
+tbody tr{transition:background .2s}
+tbody tr:hover{background:var(--paper-2)}
+.tbl-note{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:18px;color:var(--ink-soft)}
+
+.platforms{display:flex;flex-wrap:wrap;gap:10px;margin-top:56px;align-items:center}
+.platforms .mono{color:var(--ink-soft);margin-right:10px}
+.platforms .tag{font-size:15px;padding:10px 18px}
+
+/* Team */
+.team{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start}
+.person{border:1px solid var(--line);border-radius:16px;padding:20px;min-height:360px;display:flex;flex-direction:column;background:var(--paper);transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.person:hover{transform:translateY(-6px) rotate(-1deg)}
+.person.lead{background:var(--navy);color:var(--on-dark);border-color:var(--navy);transform:rotate(-2.5deg) translateY(-10px)}
+.person.lead:hover{transform:rotate(-1deg) translateY(-16px)}
+.person.lead .role,.person.lead p{color:var(--on-dark-soft)}
+.mono-avatar{width:100%;aspect-ratio:1/1;max-width:100%;border-radius:12px;background:var(--paper-2);display:grid;place-items:center;font-family:var(--f-serif);font-style:italic;font-size:clamp(56px,6vw,88px);color:var(--cobalt);margin-bottom:18px;position:relative;overflow:hidden}
+.person.lead .mono-avatar{background:var(--cobalt);color:#fff}
+.mono-avatar small{position:absolute;left:12px;bottom:10px;font-family:var(--f-mono);font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.6}
+.person h3{font-size:22px;letter-spacing:-.02em;line-height:1.1}
+.person .role{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:6px}
+.person p{font-size:14px;color:var(--ink-soft);margin-top:auto;padding-top:18px}
+.person.net{background:var(--paper-2);border-style:dashed}
+.person.net .big{font-size:clamp(56px,6vw,84px);letter-spacing:-.05em;line-height:.9;color:var(--cobalt);font-weight:500}
+@media (max-width:1000px){.team{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.team{grid-template-columns:1fr}.person{min-height:0}.person.lead{transform:none}}
+
+/* CTA */
+.cta{background:var(--cobalt);color:#fff;overflow:hidden}
+.cta-run{display:block;white-space:nowrap;text-decoration:none;padding-block:clamp(32px,5vw,64px);border-bottom:1px solid rgba(255,255,255,.25)}
+.cta-run .marquee-track{animation-duration:24s}
+.cta-run .marquee-track span{font-size:clamp(56px,10vw,160px);letter-spacing:-.05em;font-weight:500}
+.cta-run .marquee-track span::after{background:#fff;width:.18em;height:.18em}
+.cta-run:hover .marquee-track{animation-play-state:paused}
+.contacts{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:32px;padding-block:48px}
+.contacts .mono{color:rgba(255,255,255,.65);display:block;margin-bottom:10px}
+.contacts a{text-decoration:none;font-size:clamp(17px,1.5vw,21px);display:inline-block;border-bottom:1px solid rgba(255,255,255,.35);transition:border-color .2s}
+.contacts a:hover{border-color:#fff}
+.contacts p{font-size:clamp(20px,2vw,28px);line-height:1.2;letter-spacing:-.02em;max-width:18ch}
+@media (max-width:900px){.contacts{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.contacts{grid-template-columns:1fr}}
+
+footer{background:var(--navy);color:var(--on-dark-soft)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:22px}
+
+@media (prefers-reduced-motion:reduce){
+  .marquee-track{animation:none}
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="RangeMedia">
+      <svg class="logo-mark" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="6" fill="var(--cobalt)"/><path d="M4 18 L9 11 L13 15 L17 7 L22 18" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <span><b>RANGE</b>MEDIA</span>
+    </a>
+    <nav class="nav" aria-label="Разделы">
+      <a href="#services">Услуги</a>
+      <a href="#alabuga">Alabuga Start</a>
+      <a href="#cases">Кейсы</a>
+      <a href="#team">Команда</a>
+      <a href="#contacts">Контакты</a>
+    </nav>
+    <a class="btn btn--solid" href="https://t.me/t_varakin" target="_blank" rel="noopener"><span class="lbl-long">Обсудить&nbsp;</span>проект <span class="arr">→</span></a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-top mono">
+        <span>Маркетинговое агентство полного цикла</span>
+        <span>Россия · Европа · MENA · Азия · LATAM</span>
+      </div>
+      <h1>Весь <span class="serif">диапазон</span><br>маркетинга —<br>в одних руках</h1>
+      <div class="hero-row">
+        <p><strong>Блогеры и СМИ, производство контента, мероприятия, закупка рекламы и ИИ-аватары.</strong> Ведём проект от стратегии до финального отчёта — в России и за рубежом.</p>
+        <p>Маркетинговый и PR-партнёр программы <strong>Alabuga Start</strong> ОЭЗ «Алабуга» с мая 2026 года.</p>
+        <div class="hero-cta">
+          <a class="btn btn--solid" href="https://t.me/t_varakin" target="_blank" rel="noopener">Отправить бриф <span class="arr">→</span></a>
+          <a class="btn btn--ghost" href="#cases">Кейсы</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="range" aria-label="Абстрактная визуализация охвата">
+      <canvas id="ridge" aria-hidden="true"></canvas>
+      <div class="range-ui">
+        <div class="row">
+          <span class="chip mono">RangeMedia / 2026</span>
+          <span class="chip mono">● Кампании в работе</span>
+        </div>
+        <div class="row" style="align-items:flex-end">
+          <p class="range-big">Охват без границ. Результат под контролем.</p>
+          <span class="chip mono">YouTube · Instagram · TikTok · Telegram · СМИ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats" role="list">
+      <div class="stat" role="listitem"><b>18M+</b><span>аудитория авторов в наших кейсах</span></div>
+      <div class="stat" role="listitem"><b>6</b><span>регионов: Россия, США, Европа, MENA, Азия, LATAM</span></div>
+      <div class="stat" role="listitem"><b>3–7</b><span>дней от брифа до запуска кампании</span></div>
+      <div class="stat" role="listitem"><b>24 ч</b><span>на ответ и первичный медиаплан</span></div>
+      <div class="stat" role="listitem"><b style="white-space:nowrap">$5K–500K</b><span>диапазон бюджетов, с которыми работаем</span></div>
+    </div>
+  </div>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Блогеры</span><span>СМИ и PR</span><span>Продакшн</span><span>Мероприятия</span><span>Медиазакупка</span><span>ИИ-аватары</span><span>Аналитика</span>
+      <span>Блогеры</span><span>СМИ и PR</span><span>Продакшн</span><span>Мероприятия</span><span>Медиазакупка</span><span>ИИ-аватары</span><span>Аналитика</span>
+    </div>
+  </div>
+
+  <section class="sec" id="about">
+    <div class="wrap about-grid">
+      <span class="mono" style="color:var(--ink-soft);padding-top:10px">Об агентстве</span>
+      <div>
+        <p class="about-lead">RangeMedia реализует рекламные и PR-проекты в России и за рубежом. Один подрядчик закрывает <em>весь цикл</em> — и отвечает за результат целиком.</p>
+        <div class="about-cols">
+          <p>Мы работаем напрямую с авторами на YouTube, Instagram, TikTok, Facebook и в Telegram, выходим в отраслевые и федеральные СМИ, снимаем контент и проводим мероприятия. Без лишних посредников и наценок.</p>
+          <p>Ядро агентства — три партнёра, которые лично ведут каждый проект. Под задачу любого масштаба подключаем проверенную сеть продюсеров, креаторов, переводчиков и промоутеров.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="services" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="mono">Направления</span>
+        <h2>Что мы <span class="serif">делаем</span></h2>
+      </div>
+      <div class="svc">
+        <div class="svc-row"><span class="mono">[ Influence ]</span><h3>Блогеры</h3><p>Закупка интеграций у авторов любого масштаба — от микроблогеров до миллионников. Подбор, переговоры, контроль выхода, отчёт по каждому посту.</p></div>
+        <div class="svc-row"><span class="mono">[ PR ]</span><h3>СМИ</h3><p>Публикации, интервью и спецпроекты в деловых, отраслевых и региональных изданиях. Пресс-релизы, медиакиты, работа с журналистами.</p></div>
+        <div class="svc-row"><span class="mono">[ Production ]</span><h3>Контент</h3><p>Видео, Reels и Shorts, фото, дизайн, тексты. Адаптируем материалы под языки, страны и форматы площадок.</p></div>
+        <div class="svc-row"><span class="mono">[ Events ]</span><h3>Мероприятия</h3><p>Презентации, пресс-туры, конференции и закрытые встречи — от концепции и площадки до гостей и съёмки.</p></div>
+        <div class="svc-row"><span class="mono">[ Media buying ]</span><h3>Реклама</h3><p>Таргет, контекст, Telegram Ads, наружная и digital-реклама. Закупаем, оптимизируем, считаем стоимость результата.</p></div>
+        <div class="svc-row is-new"><span class="mono">[ AI ]</span><h3>ИИ-аватары</h3><p>Цифровые ведущие и амбассадоры бренда: говорят на любом языке, снимаются без съёмочной группы и масштабируют контент в десятки раз.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="alabuga" style="padding-top:0">
+    <div class="wrap">
+      <div class="flag">
+        <div class="flag-glow" aria-hidden="true"></div>
+        <div class="flag-inner">
+          <div>
+            <span class="mono">Флагманский проект</span>
+            <h2>Alabuga <span class="serif">Start</span></h2>
+            <p class="flag-lead">С мая 2026 года RangeMedia обеспечивает маркетинговое и PR-сопровождение программы Alabuga Start ОЭЗ «Алабуга», направленной на привлечение иностранных специалистов для трудоустройства.</p>
+            <span class="flag-since mono"><i></i>Проект в работе · с 05.2026</span>
+          </div>
+          <ul>
+            <li><span class="mono">01</span><div><b>Международные кампании</b><p>Привлечение заинтересованной аудитории в нескольких странах одновременно.</p></div></li>
+            <li><span class="mono">02</span><div><b>Блогеры и СМИ</b><p>Интеграции у локальных авторов и публикации в профильных медиа.</p></div></li>
+            <li><span class="mono">03</span><div><b>Адаптация контента</b><p>Материалы под регионы, профессии и требования каждой площадки.</p></div></li>
+            <li><span class="mono">04</span><div><b>Отчётность</b><p>Единый план работ и регулярные отчёты по размещениям и результатам.</p></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="why" style="padding-top:clamp(24px,4vw,48px)">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="mono">Преимущества</span>
+        <h2>Почему <span class="serif">RangeMedia</span></h2>
+      </div>
+      <div class="adv">
+        <div class="adv-item"><span class="serif">Опыт</span><h3>Продвижение программ трудоустройства и переезда</h3><p>Практическая работа с карьерными предложениями и привлечением заинтересованной аудитории — в России и за рубежом.</p></div>
+        <div class="adv-item"><span class="serif">Комплекс</span><h3>Полный цикл в одном проекте</h3><p>Стратегия, производство контента, закупка рекламы, координация подрядчиков и аналитика — без разрывов между исполнителями.</p></div>
+        <div class="adv-item"><span class="serif">Аудитории</span><h3>Работа с разными рынками</h3><p>Адаптируем материалы под регионы, профессии и особенности рекламных площадок — от Индии и Египта до Латинской Америки.</p></div>
+        <div class="adv-item"><span class="serif">Контроль</span><h3>Прозрачное исполнение</h3><p>Единый план работ, согласование материалов и отчётность: скриншоты, ссылки, охваты и вовлечённость по каждому размещению.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="process" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="mono">Как мы работаем</span>
+        <h2>От брифа до <span class="serif">отчёта</span></h2>
+      </div>
+      <div class="proc">
+        <div class="step"><span class="mono">01 · день 1</span><div><h3>Бриф</h3><p>Отвечаем в течение 24 часов, фиксируем цели, бюджет и KPI.</p></div></div>
+        <div class="step"><span class="mono">02 · дни 1–3</span><div><h3>Стратегия</h3><p>Медиаплан, подбор авторов и площадок, смета.</p></div></div>
+        <div class="step"><span class="mono">03 · дни 2–6</span><div><h3>Производство</h3><p>Креатив, сценарии, съёмка, согласование материалов.</p></div></div>
+        <div class="step"><span class="mono">04 · дни 3–7</span><div><h3>Запуск</h3><p>Выход интеграций и рекламы, контроль каждого размещения.</p></div></div>
+        <div class="step"><span class="mono">05 · постоянно</span><div><h3>Аналитика</h3><p>Отчёты по охвату и результатам, оптимизация кампании.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="cases" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="mono">Кейсы</span>
+        <h2>Авторы и <span class="serif">бренды</span></h2>
+      </div>
+
+      <article class="case-feature">
+        <div>
+          <span class="mono" style="color:var(--ink-soft)">FinTech · LATAM + Юго-Восточная Азия</span>
+          <h3>Flux Wallet</h3>
+          <p style="margin-top:18px">Запуск цифрового кошелька для трансграничных платежей. Задача — качественное привлечение пользователей на развивающихся рынках при жёстком контроле стоимости установки, активации и долгосрочной ценности клиента. Связали performance-трафик с дистрибуцией через блогеров, чтобы получить и доверие, и масштаб.</p>
+          <div class="tags"><span class="tag mono">Performance</span><span class="tag mono">Influence</span><span class="tag mono">Multi-GEO</span></div>
+        </div>
+        <div class="kpis">
+          <div><b>CPI</b><span>контроль стоимости установки</span></div>
+          <div><b>Activation</b><span>фокус на активации пользователей</span></div>
+          <div><b>LTV</b><span>долгосрочная ценность клиента</span></div>
+          <div><b>2 региона</b><span>LATAM и Юго-Восточная Азия</span></div>
+        </div>
+      </article>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Автор</th><th>Формат и ниша</th><th>Рынок</th><th class="num">YouTube</th><th class="num">Instagram</th></tr></thead>
+          <tbody>
+            <tr><td class="name">adarshuc<small>YouTuber</small></td><td>Omegle-шоу, юмор, флирт</td><td>Индия</td><td class="num">3.6M+</td><td class="num">2.9M</td></tr>
+            <tr><td class="name">Youssef Joe<small>YouTuber</small></td><td>Скетчи, сторителлинг</td><td>Египет</td><td class="num">4.3M+</td><td class="num">185K+</td></tr>
+            <tr><td class="name">Classified YT<small>Долгосрочное партнёрство</small></td><td>Гейминг: Free Fire, BGMI</td><td>Индия</td><td class="num">2.5M+</td><td class="num">269K+</td></tr>
+            <tr><td class="name">Maher Mahran<small>YouTuber</small></td><td>Юмор, реакции, роустинг</td><td>Арабоязычный</td><td class="num">1.44M+</td><td class="num">434K+</td></tr>
+            <tr><td class="name">VyukSUCKatANIME<small>YouTuber</small></td><td>Аниме-скетчи, Shorts</td><td>Индия</td><td class="num">950K+</td><td class="num">425K+</td></tr>
+            <tr><td class="name">Rk Movies<small>YouTuber</small></td><td>Драма, love story, хоррор</td><td>Global</td><td class="num">507K+</td><td class="num">~50K</td></tr>
+            <tr><td class="name">Brvce<small>YouTuber</small></td><td>Лайфстайл, влоги, челленджи</td><td>ЮАР</td><td class="num">138K+</td><td class="num">134K+</td></tr>
+            <tr><td class="name">Lakshay Kaushik<small>Digital creator</small></td><td>Лайфстайл, мода, юмор</td><td>Индия</td><td class="num">—</td><td class="num">550K+</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-note mono"><span>С Classified YT выпущены десятки интеграций</span><span>Отчёт по каждому посту</span></div>
+
+      <div class="platforms">
+        <span class="mono">Площадки</span>
+        <span class="tag">YouTube</span><span class="tag">Instagram</span><span class="tag">TikTok</span><span class="tag">Facebook</span><span class="tag">Telegram</span><span class="tag">VK</span><span class="tag">Федеральные и отраслевые СМИ</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="team" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="mono">Команда</span>
+        <h2>Люди, которые <span class="serif">отвечают</span> за результат</h2>
+      </div>
+      <div class="team">
+        <article class="person lead">
+          <div class="mono-avatar">АВ<small>Founder</small></div>
+          <h3>Артём Варакин</h3>
+          <div class="role">Руководитель агентства</div>
+          <p>Отвечает за стратегию, ключевых клиентов и международные кампании.</p>
+        </article>
+        <article class="person">
+          <div class="mono-avatar">МЖ<small>Partner</small></div>
+          <h3>Михаил Жогин</h3>
+          <div class="role">Партнёр · проекты и продакшн</div>
+          <p>Ведёт производство контента и координацию подрядчиков.</p>
+        </article>
+        <article class="person">
+          <div class="mono-avatar">ВС<small>Partner</small></div>
+          <h3>Вера Соболькова</h3>
+          <div class="role">Партнёр · PR и коммуникации</div>
+          <p>Отвечает за работу со СМИ, коммуникационную стратегию и ИИ-форматы.</p>
+        </article>
+        <article class="person net">
+          <div class="big">∞</div>
+          <h3 style="margin-top:18px">Сеть исполнителей</h3>
+          <div class="role">Под задачу любого масштаба</div>
+          <p>Продюсеры, креаторы, монтажёры, дизайнеры, переводчики и промоутеры. Собираем команду под проект за дни.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<section class="cta" id="contacts">
+  <a class="cta-run" href="https://t.me/t_varakin" target="_blank" rel="noopener" aria-label="Начать проект в Telegram">
+    <div class="marquee-track" aria-hidden="true">
+      <span>Начать проект</span><span>Start a project</span><span>Начать проект</span><span>Start a project</span>
+      <span>Начать проект</span><span>Start a project</span><span>Начать проект</span><span>Start a project</span>
+    </div>
+  </a>
+  <div class="wrap contacts">
+    <div><span class="mono">Новый проект</span><p>Пришлите бриф — ответим в течение 24 часов.</p></div>
+    <div><span class="mono">Telegram</span><a href="https://t.me/t_varakin" target="_blank" rel="noopener">@t_varakin</a><br><br><span class="mono">Канал</span><a href="https://t.me/RangeMedia" target="_blank" rel="noopener">t.me/RangeMedia</a></div>
+    <div><span class="mono">Телефон</span><a href="tel:+79269813755">+7 926 981-37-55</a></div>
+    <div><span class="mono">Почта</span><a href="mailto:RangeMedia@yandex.ru">RangeMedia@yandex.ru</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap mono">
+    <span>© 2026 RangeMedia</span>
+    <span>ООО «АЙТИ МАРКЕТ ПЛЕЙС» · ИНН 9909639351</span>
+    <span>191036, Санкт-Петербург, 4-я Советская ул.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var c=document.getElementById('ridge'); if(!c) return;
+  var ctx=c.getContext('2d'), w=0,h=0,dpr=Math.min(window.devicePixelRatio||1,2), t=0;
+  var still=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function size(){var r=c.getBoundingClientRect();w=r.width;h=r.height;c.width=w*dpr;c.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+  function y(x,i,t){
+    var k=i/46;
+    return h*(0.18+k*0.78)
+      +Math.sin(x*0.004+t*0.6+i*0.18)*h*0.06*(1-k*0.4)
+      +Math.sin(x*0.011-t*0.35+i*0.07)*h*0.03
+      -Math.exp(-Math.pow((x-w*(0.62+0.06*Math.sin(t*0.2)))/(w*0.16),2))*h*0.22*(1-k*0.6);
+  }
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    var bg=getComputedStyle(c.parentNode).backgroundColor;
+    for(var i=0;i<46;i++){
+      ctx.beginPath();
+      for(var x=-10;x<=w+10;x+=8){var yy=y(x,i,t); x<0?ctx.moveTo(x,yy):ctx.lineTo(x,yy)}
+      ctx.lineTo(w+10,h+10);ctx.lineTo(-10,h+10);ctx.closePath();
+      ctx.fillStyle=bg;ctx.globalAlpha=0.55;ctx.fill();
+      ctx.globalAlpha=0.18+0.6*(i/46);
+      ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+  }
+  function loop(){t+=0.006;draw();requestAnimationFrame(loop)}
+  size();draw();
+  window.addEventListener('resize',function(){size();draw()});
+  if(!still) requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
