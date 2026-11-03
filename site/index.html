@@ -227,10 +227,14 @@ footer{background:var(--navy);color:var(--on-dark-soft)}
 footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:22px}
 
 /* Hero v2 */
-.hero-h1{font-size:clamp(30px,4.4vw,66px)!important;line-height:1.02!important;letter-spacing:-.035em!important;max-width:20ch}
-.wordmark{display:flex;flex-wrap:nowrap;font-weight:700;font-size:clamp(40px,13.6vw,196px);line-height:.8;letter-spacing:-.06em;margin-top:clamp(20px,3vw,40px);color:var(--cobalt);white-space:nowrap;user-select:none}
-.wordmark .outline{color:transparent;-webkit-text-stroke:2px var(--cobalt)}
-@media (max-width:600px){.wordmark .outline{-webkit-text-stroke-width:1.2px}}
+.hero h1.hero-h1{font-size:clamp(46px,9.4vw,136px)}
+.sign{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:end;border-top:1.5px solid var(--ink);margin-top:clamp(28px,4vw,52px);padding-top:20px}
+.sign-name{font-weight:600;font-size:clamp(44px,6.6vw,96px);letter-spacing:-.05em;line-height:.85;color:var(--ink)}
+.sign-name i{font-style:normal;color:var(--cobalt)}
+.sign-cap{justify-self:end;text-align:right;display:flex;flex-direction:column;gap:8px;max-width:34ch;min-width:0}
+.sign-cap .mono{color:var(--ink)}
+.sign-cap p{color:var(--ink-soft);font-size:15px}
+@media (max-width:760px){.sign{grid-template-columns:1fr;gap:16px}.sign-cap{justify-self:start;text-align:left}}
 
 /* World panel */
 .world{display:grid;grid-template-columns:1fr 1.05fr;gap:24px;background:var(--cobalt);color:#fff;border-radius:24px;overflow:hidden;position:relative;margin-top:8px}
@@ -302,11 +306,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   <section class="hero">
     <div class="wrap">
       <div class="hero-top mono">
-        <span>Маркетинг · Реклама · PR · Продакшн</span>
+        <span>RangeMedia · Рекламное агентство полного цикла</span>
         <span>Россия · Европа · LATAM · Африка · Азия · MENA</span>
       </div>
-      <h1 class="hero-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> под&nbsp;ключ</h1>
-      <div class="wordmark" aria-label="RangeMedia"><span>RANGE</span><span class="outline">MEDIA</span></div>
+      <h1 class="hero-h1">Любая реклама.<br>Любой рынок.<br><span class="serif">Под ключ.</span></h1>
+      <div class="sign">
+        <div class="sign-name">Range<i>Media</i></div>
+        <div class="sign-cap"><span class="mono">Маркетинговое рекламное агентство полного цикла</span><p>От стратегии и креатива до размещения и заявок — в России и по всему миру.</p></div>
+      </div>
       <div class="hero-row">
         <p><strong>Блогеры, ТВ, наружная и digital-реклама, СМИ, спонсорство, продакшн и AI-аватары.</strong> Ведём проект от стратегии до финального отчёта — в России и по всему миру.</p>
         <p>Маркетинговый и PR-партнёр программы <strong>Alabuga Start</strong> ОЭЗ «Алабуга» с мая 2026 года.</p>
