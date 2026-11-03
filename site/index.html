@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RangeMedia</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="RangeMedia — маркетинговое агентство полного цикла. Блогеры и СМИ, производство контента, мероприятия, реклама и ИИ-аватары в России и за рубежом.">
+<meta name="description" content="RangeMedia — маркетинговое агентство полного цикла. Блогеры и СМИ, производство контента, ТВ и наружная реклама, спонсорство, digital и AI-аватары в России и по всему миру.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -207,7 +207,9 @@ tbody tr:hover{background:var(--paper-2)}
 @media (max-width:520px){.team{grid-template-columns:1fr}.person{min-height:0}.person.lead{transform:none}}
 
 /* CTA */
-.cta{background:var(--cobalt);color:#fff;overflow:hidden}
+.cta{background:var(--cobalt);color:#fff;overflow:hidden;position:relative}
+.cta-bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cta>*:not(.cta-bg){position:relative}
 .cta-run{display:block;white-space:nowrap;text-decoration:none;padding-block:clamp(32px,5vw,64px);border-bottom:1px solid rgba(255,255,255,.25)}
 .cta-run .marquee-track{animation-duration:24s}
 .cta-run .marquee-track span{font-size:clamp(56px,10vw,160px);letter-spacing:-.05em;font-weight:500}
@@ -223,6 +225,53 @@ tbody tr:hover{background:var(--paper-2)}
 
 footer{background:var(--navy);color:var(--on-dark-soft)}
 footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:22px}
+
+/* Hero v2 */
+.hero-h1{font-size:clamp(30px,4.4vw,66px)!important;line-height:1.02!important;letter-spacing:-.035em!important;max-width:20ch}
+.wordmark{display:flex;flex-wrap:nowrap;font-weight:700;font-size:clamp(40px,13.6vw,196px);line-height:.8;letter-spacing:-.06em;margin-top:clamp(20px,3vw,40px);color:var(--cobalt);white-space:nowrap;user-select:none}
+.wordmark .outline{color:transparent;-webkit-text-stroke:2px var(--cobalt)}
+@media (max-width:600px){.wordmark .outline{-webkit-text-stroke-width:1.2px}}
+
+/* World panel */
+.world{display:grid;grid-template-columns:1fr 1.05fr;gap:24px;background:var(--cobalt);color:#fff;border-radius:24px;overflow:hidden;position:relative;margin-top:8px}
+.world::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 80% at 80% 50%,rgba(255,255,255,.16),transparent 70%),radial-gradient(50% 60% at 0% 100%,rgba(5,12,40,.45),transparent 70%);pointer-events:none}
+.world-text{position:relative;padding:clamp(22px,4vw,52px);display:flex;flex-direction:column;gap:18px;min-width:0}
+.world .chip{align-self:flex-start}
+.world-big{font-size:clamp(36px,5vw,76px);line-height:.95;letter-spacing:-.04em;text-transform:uppercase;font-weight:500}
+.world-sub{font-size:clamp(17px,1.5vw,21px);line-height:1.4;max-width:34ch;color:rgba(255,255,255,.88)}
+.regions{list-style:none;margin:8px 0 0;padding:0;border-top:1px solid rgba(255,255,255,.25)}
+.regions li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:11px;border-bottom:1px solid rgba(255,255,255,.25);transition:padding .25s}
+.regions li:hover{padding-left:8px}
+.regions b{font-weight:500;font-size:17px}
+.regions .mono{color:rgba(255,255,255,.7)}
+.world-globe{position:relative;min-height:440px;cursor:grab;touch-action:pan-y}
+.world-globe:active{cursor:grabbing}
+.world-globe canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.globe-hint{position:absolute;right:20px;bottom:18px;color:rgba(255,255,255,.65)}
+@media (max-width:900px){.world{grid-template-columns:1fr}.world-globe{min-height:360px;order:-1}}
+
+/* Any ad */
+.anyad{margin-top:48px;display:grid;grid-template-columns:1fr 1.3fr;gap:clamp(24px,4vw,64px);background:var(--paper-2);border-radius:24px;padding:clamp(24px,4vw,56px)}
+.anyad-head{display:flex;flex-direction:column;gap:16px;min-width:0}
+.anyad-head .mono{color:var(--ink-soft)}
+.anyad-head h3{font-size:clamp(30px,3.8vw,56px);line-height:1;letter-spacing:-.035em;text-transform:uppercase;font-weight:500}
+.anyad-head h3 .serif{color:var(--cobalt)}
+.anyad-head p{color:var(--ink-soft);max-width:40ch}
+.cloud{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.cloud li{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:10px 18px;font-size:16px;transition:background .2s,color .2s,transform .2s,border-color .2s;cursor:default}
+.cloud li.hot{border-color:var(--cobalt);color:var(--cobalt);font-weight:500}
+.cloud li:hover{background:var(--cobalt);border-color:var(--cobalt);color:#fff;transform:translateY(-3px) rotate(-1.5deg)}
+@media (max-width:860px){.anyad{grid-template-columns:1fr}}
+
+/* Advantage: postpay */
+.adv-wide{grid-column:1/-1;flex-direction:row!important;align-items:center;gap:clamp(20px,4vw,64px)!important;background:var(--navy);color:var(--on-dark);border-radius:24px;padding:clamp(24px,4vw,56px)!important;margin-top:32px;border:0!important}
+.adv-num{font-size:clamp(88px,15vw,220px);font-weight:600;letter-spacing:-.07em;line-height:.8;color:var(--on-dark);flex:none}
+.adv-num span{font-family:var(--f-serif);font-style:italic;font-weight:500;color:var(--ice);font-size:.6em;letter-spacing:0;margin-left:.04em}
+.adv-wide-text{display:flex;flex-direction:column;gap:12px;min-width:0}
+.adv-wide .mono{color:var(--on-dark-soft)}
+.adv-wide h3{font-size:clamp(24px,2.6vw,36px)!important;letter-spacing:-.025em}
+.adv-wide p{color:var(--on-dark-soft)!important;max-width:52ch}
+@media (max-width:760px){.adv-wide{flex-direction:column!important;align-items:flex-start}}
 
 @media (prefers-reduced-motion:reduce){
   .marquee-track{animation:none}
@@ -245,7 +294,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       <a href="#team">Команда</a>
       <a href="#contacts">Контакты</a>
     </nav>
-    <a class="btn btn--solid" href="https://t.me/t_varakin" target="_blank" rel="noopener"><span class="lbl-long">Обсудить&nbsp;</span>проект <span class="arr">→</span></a>
+    <a class="btn btn--solid" href="https://t.me/RM_RangeMedia" target="_blank" rel="noopener"><span class="lbl-long">Обсудить&nbsp;</span>проект <span class="arr">→</span></a>
   </div>
 </header>
 
@@ -253,15 +302,16 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   <section class="hero">
     <div class="wrap">
       <div class="hero-top mono">
-        <span>Маркетинговое агентство полного цикла</span>
-        <span>Россия · Европа · MENA · Азия · LATAM</span>
+        <span>Маркетинг · Реклама · PR · Продакшн</span>
+        <span>Россия · Европа · LATAM · Африка · Азия · MENA</span>
       </div>
-      <h1>Весь <span class="serif">диапазон</span><br>маркетинга —<br>в одних руках</h1>
+      <h1 class="hero-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> под&nbsp;ключ</h1>
+      <div class="wordmark" aria-label="RangeMedia"><span>RANGE</span><span class="outline">MEDIA</span></div>
       <div class="hero-row">
-        <p><strong>Блогеры и СМИ, производство контента, мероприятия, закупка рекламы и ИИ-аватары.</strong> Ведём проект от стратегии до финального отчёта — в России и за рубежом.</p>
+        <p><strong>Блогеры, ТВ, наружная и digital-реклама, СМИ, спонсорство, продакшн и AI-аватары.</strong> Ведём проект от стратегии до финального отчёта — в России и по всему миру.</p>
         <p>Маркетинговый и PR-партнёр программы <strong>Alabuga Start</strong> ОЭЗ «Алабуга» с мая 2026 года.</p>
         <div class="hero-cta">
-          <a class="btn btn--solid" href="https://t.me/t_varakin" target="_blank" rel="noopener">Отправить бриф <span class="arr">→</span></a>
+          <a class="btn btn--solid" href="https://t.me/RM_RangeMedia" target="_blank" rel="noopener">Отправить бриф <span class="arr">→</span></a>
           <a class="btn btn--ghost" href="#cases">Кейсы</a>
         </div>
       </div>
@@ -269,23 +319,29 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   </section>
 
   <div class="wrap">
-    <div class="range" aria-label="Абстрактная визуализация охвата">
-      <canvas id="ridge" aria-hidden="true"></canvas>
-      <div class="range-ui">
-        <div class="row">
-          <span class="chip mono">RangeMedia / 2026</span>
-          <span class="chip mono">● Кампании в работе</span>
-        </div>
-        <div class="row" style="align-items:flex-end">
-          <p class="range-big">Охват без границ. Результат под контролем.</p>
-          <span class="chip mono">YouTube · Instagram · TikTok · Telegram · СМИ</span>
-        </div>
+    <div class="world" id="geo">
+      <div class="world-text">
+        <span class="chip mono">● География RangeMedia</span>
+        <h2 class="world-big">Работаем по&nbsp;всей планете</h2>
+        <p class="world-sub">Создаём охват, приводим клиентов и заявки — на любом рынке, на языке вашей аудитории.</p>
+        <ul class="regions">
+          <li><b>Россия и СНГ</b><span class="mono">Hub</span></li>
+          <li><b>Европа</b><span class="mono">EU</span></li>
+          <li><b>Латинская Америка</b><span class="mono">LATAM</span></li>
+          <li><b>Африка</b><span class="mono">AF</span></li>
+          <li><b>Азия</b><span class="mono">APAC</span></li>
+          <li><b>Ближний Восток и Северная Африка</b><span class="mono">MENA</span></li>
+        </ul>
+      </div>
+      <div class="world-globe">
+        <canvas id="globe" aria-label="Глобус: кампании из России в Европу, Латинскую Америку, Африку, Азию и MENA" role="img"></canvas>
+        <span class="globe-hint mono">Потяните, чтобы повернуть</span>
       </div>
     </div>
 
     <div class="stats" role="list">
       <div class="stat" role="listitem"><b>18M+</b><span>аудитория авторов в наших кейсах</span></div>
-      <div class="stat" role="listitem"><b>6</b><span>регионов: Россия, США, Европа, MENA, Азия, LATAM</span></div>
+      <div class="stat" role="listitem"><b>6</b><span>регионов: Россия, Европа, LATAM, Африка, Азия, MENA</span></div>
       <div class="stat" role="listitem"><b>3–7</b><span>дней от брифа до запуска кампании</span></div>
       <div class="stat" role="listitem"><b>24 ч</b><span>на ответ и первичный медиаплан</span></div>
       <div class="stat" role="listitem"><b style="white-space:nowrap">$5K–500K</b><span>диапазон бюджетов, с которыми работаем</span></div>
@@ -294,8 +350,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 
   <div class="marquee" aria-hidden="true">
     <div class="marquee-track">
-      <span>Блогеры</span><span>СМИ и PR</span><span>Продакшн</span><span>Мероприятия</span><span>Медиазакупка</span><span>ИИ-аватары</span><span>Аналитика</span>
-      <span>Блогеры</span><span>СМИ и PR</span><span>Продакшн</span><span>Мероприятия</span><span>Медиазакупка</span><span>ИИ-аватары</span><span>Аналитика</span>
+      <span>Блогеры</span><span>ТВ-реклама</span><span>Наружная реклама</span><span>СМИ и PR</span><span>Спонсорство</span><span>Продакшн</span><span>Digital</span><span>AI-аватары</span>
+      <span>Блогеры</span><span>ТВ-реклама</span><span>Наружная реклама</span><span>СМИ и PR</span><span>Спонсорство</span><span>Продакшн</span><span>Digital</span><span>AI-аватары</span>
     </div>
   </div>
 
@@ -303,7 +359,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
     <div class="wrap about-grid">
       <span class="mono" style="color:var(--ink-soft);padding-top:10px">Об агентстве</span>
       <div>
-        <p class="about-lead">RangeMedia реализует рекламные и PR-проекты в России и за рубежом. Один подрядчик закрывает <em>весь цикл</em> — и отвечает за результат целиком.</p>
+        <p class="about-lead">RangeMedia реализует рекламные и PR-проекты в России и за рубежом. Один подрядчик закрывает <em>полный цикл</em> и несёт ответственность за результат.</p>
         <div class="about-cols">
           <p>Мы работаем напрямую с авторами на YouTube, Instagram, TikTok, Facebook и в Telegram, выходим в отраслевые и федеральные СМИ, снимаем контент и проводим мероприятия. Без лишних посредников и наценок.</p>
           <p>Ядро агентства — три партнёра, которые лично ведут каждый проект. Под задачу любого масштаба подключаем проверенную сеть продюсеров, креаторов, переводчиков и промоутеров.</p>
@@ -320,11 +376,24 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       </div>
       <div class="svc">
         <div class="svc-row"><span class="mono">[ Influence ]</span><h3>Блогеры</h3><p>Закупка интеграций у авторов любого масштаба — от микроблогеров до миллионников. Подбор, переговоры, контроль выхода, отчёт по каждому посту.</p></div>
+        <div class="svc-row"><span class="mono">[ TV ]</span><h3>ТВ-реклама</h3><p>Ролики на федеральных, региональных и тематических каналах, спонсорство программ, product placement. Медиаплан, производство ролика и закупка эфира.</p></div>
+        <div class="svc-row"><span class="mono">[ OOH ]</span><h3>Наружка</h3><p>Билборды, суперсайты, цифровые экраны, транспорт, метро, аэропорты и indoor — в России и за рубежом.</p></div>
         <div class="svc-row"><span class="mono">[ PR ]</span><h3>СМИ</h3><p>Публикации, интервью и спецпроекты в деловых, отраслевых и региональных изданиях. Пресс-релизы, медиакиты, работа с журналистами.</p></div>
+        <div class="svc-row"><span class="mono">[ Sponsorship ]</span><h3>Спонсорство</h3><p>Организуем спонсорские мероприятия и интеграции бренда в фестивали, спорт, конференции и шоу. Презентации, пресс-туры, закрытые встречи.</p></div>
+        <div class="svc-row"><span class="mono">[ Digital ]</span><h3>Digital</h3><p>Таргет, контекст, Telegram Ads, programmatic, CPA и лидогенерация. Закупаем, оптимизируем, считаем стоимость заявки.</p></div>
         <div class="svc-row"><span class="mono">[ Production ]</span><h3>Контент</h3><p>Видео, Reels и Shorts, фото, дизайн, тексты. Адаптируем материалы под языки, страны и форматы площадок.</p></div>
-        <div class="svc-row"><span class="mono">[ Events ]</span><h3>Мероприятия</h3><p>Презентации, пресс-туры, конференции и закрытые встречи — от концепции и площадки до гостей и съёмки.</p></div>
-        <div class="svc-row"><span class="mono">[ Media buying ]</span><h3>Реклама</h3><p>Таргет, контекст, Telegram Ads, наружная и digital-реклама. Закупаем, оптимизируем, считаем стоимость результата.</p></div>
-        <div class="svc-row is-new"><span class="mono">[ AI ]</span><h3>ИИ-аватары</h3><p>Цифровые ведущие и амбассадоры бренда: говорят на любом языке, снимаются без съёмочной группы и масштабируют контент в десятки раз.</p></div>
+        <div class="svc-row is-new"><span class="mono">[ AI ]</span><h3>AI-аватары</h3><p>Цифровые ведущие и амбассадоры бренда: говорят на любом языке, снимаются без съёмочной группы и масштабируют контент в десятки раз.</p></div>
+      </div>
+
+      <div class="anyad">
+        <div class="anyad-head">
+          <span class="mono">Все виды рекламы</span>
+          <h3>Нет такой рекламы, которую мы <span class="serif">не&nbsp;можем</span> сделать</h3>
+          <p>Онлайн и офлайн, локально и в нескольких странах сразу. Соберём медиамикс под задачу и бюджет.</p>
+        </div>
+        <ul class="cloud">
+          <li class="hot">ТВ</li><li>Радио</li><li class="hot">Билборды</li><li>Цифровые экраны</li><li>Транспорт и метро</li><li>Аэропорты</li><li>Indoor</li><li class="hot">Блогеры</li><li>Посевы в Telegram</li><li>Telegram Ads</li><li>Таргет</li><li>Контекст</li><li>Programmatic</li><li>CPA и лидген</li><li>SEO</li><li class="hot">СМИ и PR</li><li>Нативные спецпроекты</li><li class="hot">Спонсорство</li><li>Ивенты</li><li>Промоакции</li><li>Product placement</li><li>Подкасты</li><li>Маркетплейсы</li><li>POS-материалы</li><li class="hot">AI-аватары</li>
+        </ul>
       </div>
     </div>
   </section>
@@ -362,6 +431,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
         <div class="adv-item"><span class="serif">Комплекс</span><h3>Полный цикл в одном проекте</h3><p>Стратегия, производство контента, закупка рекламы, координация подрядчиков и аналитика — без разрывов между исполнителями.</p></div>
         <div class="adv-item"><span class="serif">Аудитории</span><h3>Работа с разными рынками</h3><p>Адаптируем материалы под регионы, профессии и особенности рекламных площадок — от Индии и Египта до Латинской Америки.</p></div>
         <div class="adv-item"><span class="serif">Контроль</span><h3>Прозрачное исполнение</h3><p>Единый план работ, согласование материалов и отчётность: скриншоты, ссылки, охваты и вовлечённость по каждому размещению.</p></div>
+        <div class="adv-item adv-wide">
+          <div class="adv-num">100<span>%</span></div>
+          <div class="adv-wide-text">
+            <span class="mono">Финансовые условия</span>
+            <h3>Работа по 100% постоплате</h3>
+            <p>Готовы запускать проекты без предоплаты: вы оплачиваете работу после выполнения и подтверждённых размещений. Мы уверены в результате и берём риск на себя.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -451,7 +528,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
           <div class="mono-avatar">ВС<small>Partner</small></div>
           <h3>Вера Соболькова</h3>
           <div class="role">Партнёр · PR и коммуникации</div>
-          <p>Отвечает за работу со СМИ, коммуникационную стратегию и ИИ-форматы.</p>
+          <p>Отвечает за работу со СМИ, коммуникационную стратегию и AI-форматы.</p>
         </article>
         <article class="person net">
           <div class="big">∞</div>
@@ -465,7 +542,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 </main>
 
 <section class="cta" id="contacts">
-  <a class="cta-run" href="https://t.me/t_varakin" target="_blank" rel="noopener" aria-label="Начать проект в Telegram">
+  <canvas id="ridge" class="cta-bg" aria-hidden="true"></canvas>
+  <a class="cta-run" href="https://t.me/RM_RangeMedia" target="_blank" rel="noopener" aria-label="Начать проект в Telegram">
     <div class="marquee-track" aria-hidden="true">
       <span>Начать проект</span><span>Start a project</span><span>Начать проект</span><span>Start a project</span>
       <span>Начать проект</span><span>Start a project</span><span>Начать проект</span><span>Start a project</span>
@@ -473,8 +551,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   </a>
   <div class="wrap contacts">
     <div><span class="mono">Новый проект</span><p>Пришлите бриф — ответим в течение 24 часов.</p></div>
-    <div><span class="mono">Telegram</span><a href="https://t.me/t_varakin" target="_blank" rel="noopener">@t_varakin</a><br><br><span class="mono">Канал</span><a href="https://t.me/RangeMedia" target="_blank" rel="noopener">t.me/RangeMedia</a></div>
-    <div><span class="mono">Телефон</span><a href="tel:+79269813755">+7 926 981-37-55</a></div>
+    <div><span class="mono">Telegram</span><a href="https://t.me/RM_RangeMedia" target="_blank" rel="noopener">@RM_RangeMedia</a><br><br><span class="mono">Канал</span><a href="https://t.me/RangeMedia" target="_blank" rel="noopener">t.me/RangeMedia</a></div>
+    <div><span class="mono">Телефон</span><a href="tel:+79919266325">+7 991 926-63-25</a></div>
     <div><span class="mono">Почта</span><a href="mailto:RangeMedia@yandex.ru">RangeMedia@yandex.ru</a></div>
   </div>
 </section>
@@ -489,34 +567,75 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 
 <script>
 (function(){
-  var c=document.getElementById('ridge'); if(!c) return;
-  var ctx=c.getContext('2d'), w=0,h=0,dpr=Math.min(window.devicePixelRatio||1,2), t=0;
-  var still=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function size(){var r=c.getBoundingClientRect();w=r.width;h=r.height;c.width=w*dpr;c.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
-  function y(x,i,t){
-    var k=i/46;
-    return h*(0.18+k*0.78)
-      +Math.sin(x*0.004+t*0.6+i*0.18)*h*0.06*(1-k*0.4)
-      +Math.sin(x*0.011-t*0.35+i*0.07)*h*0.03
-      -Math.exp(-Math.pow((x-w*(0.62+0.06*Math.sin(t*0.2)))/(w*0.16),2))*h*0.22*(1-k*0.6);
-  }
-  function draw(){
-    ctx.clearRect(0,0,w,h);
-    var bg=getComputedStyle(c.parentNode).backgroundColor;
-    for(var i=0;i<46;i++){
-      ctx.beginPath();
-      for(var x=-10;x<=w+10;x+=8){var yy=y(x,i,t); x<0?ctx.moveTo(x,yy):ctx.lineTo(x,yy)}
-      ctx.lineTo(w+10,h+10);ctx.lineTo(-10,h+10);ctx.closePath();
-      ctx.fillStyle=bg;ctx.globalAlpha=0.55;ctx.fill();
-      ctx.globalAlpha=0.18+0.6*(i/46);
-      ctx.strokeStyle='#ffffff';ctx.lineWidth=1;ctx.stroke();
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* ---------- Globe ---------- */
+  var g=document.getElementById('globe');
+  if(g){
+    var raw="as.ts,bg.tb,bg.ub,bg.vb,c4.t5,c4.u3,c4.v2,c4.2p3,cs.uk,cs.vh,cs.2p8,dg.th,dg.ud,dg.v9,dg.2j3,dg.2q8,e4.u6,e4.v1,e4.vw,e4.2r5,es.u0,es.uu,es.vo,es.wi,es.xc,es.y6,es.2h6,es.2i0,es.2iu,es.2jo,fg.un,fg.vg,fg.w9,fg.x2,fg.yo,fg.1jn,fg.2a9,fg.2b2,fg.2gq,fg.2hj,fg.2ic,fg.2j5,fg.2jy,g4.uq,g4.vi,g4.wa,g4.x3,g4.xv,g4.yn,g4.zg,g4.1j4,g4.1jx,g4.1kp,g4.1lh,g4.2ao,g4.2bh,g4.2c9,g4.2d1,g4.2fe,g4.2g7,g4.2gz,g4.2hr,g4.2ik,g4.2jc,g4.2k5,gs.us,gs.vj,gs.wb,gs.x3,gs.xu,gs.ym,gs.ze,gs.106,gs.1je,gs.1k6,gs.1kx,gs.1lp,gs.1mh,gs.2ab,gs.2b3,gs.2bu,gs.2cm,gs.2de,gs.2e6,gs.2ex,gs.2fp,gs.2gh,gs.2h8,gs.2i0,gs.2is,gs.2jj,gs.2kb,hg.uu,hg.vl,hg.wc,hg.x3,hg.xu,hg.yl,hg.zc,hg.103,hg.1iw,hg.1jn,hg.1ke,hg.1l5,hg.1lw,hg.1mn,hg.29y,hg.2ap,hg.2bh,hg.2c8,hg.2cz,hg.2dq,hg.2eh,hg.2f8,hg.2fz,hg.2gq,hg.2hh,hg.2i8,hg.2iz,hg.2jq,hg.2kh,i4.uw,i4.vm,i4.wd,i4.x3,i4.xu,i4.yk,i4.zb,i4.101,i4.10s,i4.1if,i4.1j5,i4.1jw,i4.1km,i4.1ld,i4.1m3,i4.1mu,i4.1qi,i4.29m,i4.2ad,i4.2b3,i4.2bu,i4.2ck,i4.2db,i4.2e1,i4.2es,i4.2fi,i4.2g8,i4.2gz,i4.2hp,i4.2ig,i4.2j6,i4.2jx,is.uy,is.vo,is.wd,is.x3,is.xt,is.yj,is.z9,is.zz,is.10p,is.11f,is.125,is.1io,is.1je,is.1k4,is.1ku,is.1lk,is.1ma,is.1n0,is.1nq,is.1ql,is.1rb,is.2a1,is.2aq,is.2bg,is.2c6,is.2cw,is.2dm,is.2ec,is.2f2,is.2fs,is.2gi,is.2h8,is.2hx,is.2in,is.2jd,jg.v7,jg.vx,jg.wm,jg.xc,jg.y2,jg.yr,jg.zh,jg.106,jg.10w,jg.11l,jg.12b,jg.1hw,jg.1im,jg.1jb,jg.1k1,jg.1kr,jg.1lg,jg.1m6,jg.1mv,jg.1nl,jg.1qf,jg.1r4,jg.2bp,jg.2ce,jg.2d4,jg.2dt,jg.2ej,jg.2f8,jg.2fy,jg.2gn,jg.2hd,jg.2i3,jg.2is,k4.us,k4.vh,k4.w6,k4.wv,k4.xk,k4.ya,k4.yz,k4.zo,k4.10d,k4.112,k4.11r,k4.12h,k4.1hu,k4.1ik,k4.1j9,k4.1jy,k4.1kn,k4.1lc,k4.1m2,k4.1mr,k4.1ng,k4.1o5,k4.1q9,k4.1qy,k4.1rn,k4.2cm,k4.2db,k4.2e1,k4.2eq,k4.2ff,k4.2g4,k4.2gt,k4.2hi,k4.2i8,k4.2rb,ks.to,ks.uc,ks.v1,ks.vq,ks.wf,ks.x4,ks.xt,ks.yh,ks.z6,ks.zv,ks.10k,ks.119,ks.11y,ks.12m,ks.1ht,ks.1ih,ks.1j6,ks.1jv,ks.1kk,ks.1l9,ks.1ly,ks.1mm,ks.1nb,ks.1o0,ks.1op,ks.1rg,ks.2cu,ks.2dj,ks.2e7,ks.2ew,ks.2fl,ks.2ho,ks.2ic,lg.ss,lg.tg,lg.u5,lg.uu,lg.vi,lg.w7,lg.ww,lg.xk,lg.y9,lg.yy,lg.zm,lg.10b,lg.110,lg.11o,lg.12d,lg.131,lg.1i4,lg.1it,lg.1jh,lg.1k6,lg.1kv,lg.1lj,lg.1m8,lg.1mx,lg.1nl,lg.1oa,lg.1oz,lg.1rp,lg.2eb,lg.2f0,lg.2fo,lg.2hq,m4.se,m4.t2,m4.tq,m4.uf,m4.v3,m4.vr,m4.wg,m4.x4,m4.xs,m4.yh,m4.z5,m4.zt,m4.10i,m4.116,m4.11u,m4.12i,m4.137,m4.13v,m4.1i2,m4.1iq,m4.1jf,m4.1k3,m4.1kr,m4.1lg,m4.1m4,m4.1ms,m4.1nh,m4.1o5,m4.1ot,ms.s7,ms.sv,ms.tj,ms.u7,ms.uv,ms.vk,ms.w8,ms.ww,ms.xk,ms.y8,ms.yw,ms.zl,ms.109,ms.10x,ms.11l,ms.129,ms.12x,ms.13m,ms.14a,ms.1hp,ms.1id,ms.1j1,ms.1jp,ms.1ke,ms.1l2,ms.1lq,ms.1me,ms.1n2,ms.1nq,ms.1oe,ms.297,ms.29w,ms.2gl,ms.2h9,ms.2im,ng.rj,ng.s7,ng.sv,ng.tj,ng.u7,ng.uv,ng.vk,ng.w8,ng.ww,ng.xk,ng.y8,ng.yw,ng.zl,ng.109,ng.10x,ng.11l,ng.129,ng.12x,ng.13m,ng.1hp,ng.1id,ng.1j1,ng.1jp,ng.1ke,ng.1l2,ng.1lq,ng.1me,ng.1n2,ng.1nq,ng.1oe,ng.277,ng.2gl,ng.2h9,ng.2hy,ng.2im,ng.2ja,ng.2jy,o4.s0,o4.so,o4.tc,o4.u0,o4.uo,o4.vc,o4.w0,o4.wo,o4.xc,o4.y0,o4.yo,o4.zc,o4.100,o4.10o,o4.11c,o4.120,o4.12o,o4.1hc,o4.1i0,o4.1io,o4.1jc,o4.1k0,o4.1ko,o4.1lc,o4.1m0,o4.1mo,o4.1nc,o4.1o0,o4.1oo,o4.26o,o4.27c,o4.29c,o4.2a0,o4.2bc,o4.2c0,o4.2e0,o4.2fc,o4.2g0,o4.2go,o4.2hc,os.s0,os.so,os.tc,os.u0,os.uo,os.vc,os.w0,os.wo,os.xc,os.y0,os.yo,os.zc,os.100,os.10o,os.1go,os.1hc,os.1i0,os.1io,os.1jc,os.1k0,os.1ko,os.1lc,os.1m0,os.1mo,os.1nc,os.1o0,os.1oo,os.1pc,os.260,os.26o,os.28o,os.29c,os.2a0,os.2bc,os.2c0,os.2eo,pg.so,pg.tc,pg.u0,pg.uo,pg.vc,pg.w0,pg.wo,pg.xc,pg.y0,pg.yo,pg.zc,pg.100,pg.1go,pg.1hc,pg.1i0,pg.1io,pg.1jc,pg.1k0,pg.1ko,pg.1lc,pg.1m0,pg.1mo,pg.1nc,pg.1o0,pg.1oo,pg.1pc,pg.1q0,pg.260,pg.26o,pg.28o,pg.29c,pg.2a0,pg.2ao,q4.so,q4.tc,q4.u0,q4.uo,q4.vc,q4.w0,q4.wo,q4.xc,q4.y0,q4.yo,q4.zc,q4.1go,q4.1hc,q4.1i0,q4.1io,q4.1jc,q4.1k0,q4.1ko,q4.1lc,q4.1m0,q4.1mo,q4.1nc,q4.1o0,q4.1oo,q4.1pc,q4.1q0,q4.1qo,q4.25c,q4.260,q4.26o,q4.2a0,q4.2ao,qs.sv,qs.tj,qs.u7,qs.uv,qs.vk,qs.w8,qs.ww,qs.xk,qs.1az,qs.1bn,qs.1cc,qs.1d0,qs.1do,qs.1ec,qs.1f0,qs.1fo,qs.1gd,qs.1h1,qs.1hp,qs.1id,qs.1j1,qs.1jp,qs.1ke,qs.1l2,qs.1lq,qs.1me,qs.1n2,qs.1nq,qs.1oe,qs.1p3,qs.1pr,qs.1qf,qs.1r3,qs.20h,qs.25v,qs.2ak,qs.2ck,rg.r1,rg.rp,rg.se,rg.t2,rg.tq,rg.uf,rg.v3,rg.vr,rg.wg,rg.x4,rg.1am,rg.1bb,rg.1bz,rg.1cn,rg.1dc,rg.1e0,rg.1eo,rg.1fd,rg.1g1,rg.1gp,rg.1he,rg.1i2,rg.1iq,rg.1jf,rg.1k3,rg.1kr,rg.1lg,rg.1m4,rg.1ms,rg.1nh,rg.1o5,rg.1ot,rg.1pi,rg.1q6,rg.1qu,rg.1ri,rg.1zm,rg.20b,rg.25p,s4.qj,s4.ty,s4.um,s4.1a9,s4.1ay,s4.1bm,s4.1cb,s4.1cz,s4.1do,s4.1ec,s4.1f1,s4.1fp,s4.1ge,s4.1h2,s4.1hr,s4.1if,s4.1j4,s4.1js,s4.1kh,s4.1l5,s4.1lu,s4.1mi,s4.1n7,s4.1nv,s4.1ok,s4.1p8,s4.1px,s4.1ry,s4.1zf,s4.204,s4.25k,s4.26x,s4.27l,ss.pc,ss.q1,ss.qq,ss.19w,ss.1al,ss.1b9,ss.1by,ss.1cn,ss.1db,ss.1e0,ss.1ep,ss.1fd,ss.1g2,ss.1gr,ss.1hf,ss.1i4,ss.1it,ss.1jh,ss.1k6,ss.1kv,ss.1lj,ss.1m8,ss.1mx,ss.1nl,ss.1oa,ss.1oz,ss.1pn,ss.1qc,ss.1r0,ss.1z8,ss.1zx,ss.25e,ss.263,ss.26s,ss.27g,ss.285,ss.2c9,tg.mx,tg.ob,tg.p0,tg.19u,tg.1aj,tg.1b8,tg.1bx,tg.1cm,tg.1db,tg.1e0,tg.1ep,tg.1fe,tg.1g3,tg.1gs,tg.1hh,tg.1i6,tg.1iv,tg.1jk,tg.1k9,tg.1ky,tg.1ln,tg.1mc,tg.1n1,tg.1nq,tg.1of,tg.1qi,tg.1r7,tg.1rw,tg.1yu,tg.1zj,tg.208,tg.24e,tg.25s,tg.26h,tg.276,tg.27v,tg.2bc,u4.lu,u4.mj,u4.n9,u4.on,u4.pd,u4.tl,u4.ua,u4.vp,u4.19s,u4.1ah,u4.1b7,u4.1bw,u4.1cl,u4.1db,u4.1e0,u4.1ep,u4.1ff,u4.1g4,u4.1gt,u4.1hj,u4.1i8,u4.1ix,u4.1jn,u4.1kc,u4.1l2,u4.1lr,u4.1mg,u4.1n6,u4.1nv,u4.1pz,u4.1qo,u4.1re,u4.1s3,u4.1ss,u4.1ti,u4.1yf,u4.1z5,u4.1zu,u4.20j,u4.219,u4.24r,u4.25h,u4.266,u4.26v,u4.28a,us.kq,us.lf,us.m5,us.mv,us.p0,us.pq,us.sl,us.19q,us.1af,us.1b5,us.1bv,us.1cl,us.1da,us.1e0,us.1eq,us.1ff,us.1g5,us.1gv,us.1hl,us.1ia,us.1j0,us.1jq,us.1kf,us.1l5,us.1lv,us.1ml,us.1na,us.1o0,us.1pf,us.1q5,us.1qv,us.1rl,us.1sa,us.1t0,us.1tq,us.1yq,us.1zf,us.205,us.20v,us.21l,us.23q,us.24f,us.255,us.25v,us.26l,us.27a,us.28q,vg.jk,vg.l1,vg.lr,vg.mh,vg.19n,vg.1ae,vg.1b4,vg.1bu,vg.1ck,vg.1da,vg.1e0,vg.1eq,vg.1fg,vg.1g6,vg.1gw,vg.1hm,vg.1id,vg.1j3,vg.1jt,vg.1kj,vg.1l9,vg.1lz,vg.1mp,vg.1nf,vg.1ov,vg.1pl,vg.1qb,vg.1r2,vg.1rs,vg.1si,vg.1t8,vg.1ty,vg.1xk,vg.1ya,vg.1z1,vg.1zr,vg.20h,vg.217,vg.21x,vg.22n,vg.23d,vg.243,vg.24t,vg.25j,vg.269,vg.26z,vg.27q,vg.28g,vg.296,vg.29w,w4.k0,w4.kr,w4.lh,w4.m8,w4.mz,w4.19x,w4.1ao,w4.1bf,w4.1c5,w4.1cw,w4.1dn,w4.1ed,w4.1f4,w4.1fv,w4.1gl,w4.1hc,w4.1i3,w4.1it,w4.1jk,w4.1kb,w4.1l1,w4.1ls,w4.1mj,w4.1n9,w4.1or,w4.1ph,w4.1q8,w4.1qz,w4.1rp,w4.1uo,w4.1vf,w4.1w5,w4.1ww,w4.1xn,w4.1yd,w4.1z4,w4.1zv,w4.20l,w4.21c,w4.223,w4.22t,w4.23k,w4.24b,w4.251,w4.25s,w4.26j,w4.279,w4.280,w4.28r,w4.29h,w4.2a8,w4.2az,ws.jp,ws.kg,ws.l8,ws.lz,ws.mq,ws.ra,ws.1az,ws.1bq,ws.1ch,ws.1d9,ws.1e0,ws.1er,ws.1fj,ws.1ga,ws.1h1,ws.1hs,ws.1ik,ws.1jb,ws.1k2,ws.1kt,ws.1ll,ws.1mc,ws.1n3,ws.1nv,ws.1om,ws.1pd,ws.1q4,ws.1qw,ws.1se,ws.1t5,ws.1tx,ws.1uo,ws.1vf,ws.1w7,ws.1wy,ws.1xp,ws.1yg,ws.1z8,ws.1zz,ws.20q,ws.21h,ws.229,ws.230,ws.23r,ws.24j,ws.25a,ws.261,ws.26s,ws.27k,ws.28b,ws.292,ws.29t,ws.2al,ws.2bc,xg.hu,xg.je,xg.k6,xg.kx,xg.lp,xg.mh,xg.n9,xg.o1,xg.ot,xg.pl,xg.qd,xg.r5,xg.1c2,xg.1cu,xg.1dm,xg.1ee,xg.1f6,xg.1fy,xg.1gq,xg.1hi,xg.1i9,xg.1j1,xg.1jt,xg.1kl,xg.1ld,xg.1m5,xg.1mx,xg.1np,xg.1oh,xg.1p9,xg.1q1,xg.1qs,xg.1rk,xg.1sc,xg.1t4,xg.1tw,xg.1uo,xg.1vg,xg.1w8,xg.1x0,xg.1xs,xg.1yk,xg.1zb,xg.203,xg.20v,xg.21n,xg.22f,xg.237,xg.23z,xg.24r,xg.25j,xg.26b,xg.273,xg.27u,xg.28m,xg.29e,xg.2a6,xg.2ay,y4.hh,y4.i9,y4.j2,y4.ju,y4.kn,y4.lf,y4.m8,y4.n1,y4.nt,y4.om,y4.pe,y4.q7,y4.qz,y4.rs,y4.1bm,y4.1cf,y4.1d7,y4.1e0,y4.1et,y4.1fl,y4.1ge,y4.1h6,y4.1ob,y4.1p4,y4.1px,y4.1qp,y4.1ri,y4.1sa,y4.1t3,y4.1tv,y4.1uo,y4.1vh,y4.1w9,y4.1x2,y4.1xu,y4.1yn,y4.1zf,y4.208,y4.211,y4.21t,y4.22m,y4.23e,y4.247,y4.24z,y4.25s,y4.26l,y4.27d,y4.286,y4.28y,y4.29r,y4.2aj,y4.2bc,y4.2ei,ys.h3,ys.hw,ys.ip,ys.ji,ys.kc,ys.l5,ys.ly,ys.ms,ys.nl,ys.oe,ys.p7,ys.q1,ys.qu,ys.rn,ys.sg,ys.1cs,ys.1dl,ys.1ef,ys.1f8,ys.1g1,ys.1gu,ys.1kx,ys.1nd,ys.1o6,ys.1oz,ys.1ps,ys.1qm,ys.1rf,ys.1s8,ys.1t1,ys.1tv,ys.1uo,ys.1vh,ys.1wb,ys.1x4,ys.1xx,ys.1yq,ys.1zk,ys.20d,ys.216,ys.21z,ys.22t,ys.23m,ys.24f,ys.258,ys.262,ys.26v,ys.27o,ys.28i,ys.29b,ys.2a4,ys.2ax,ys.2dd,ys.2f0,ys.2ft,ys.2gm,zg.fz,zg.gt,zg.hn,zg.ii,zg.jc,zg.k6,zg.l0,zg.lv,zg.mp,zg.nj,zg.od,zg.p8,zg.q2,zg.qw,zg.rq,zg.sl,zg.1bw,zg.1cr,zg.1dl,zg.1hs,zg.1kb,zg.1lz,zg.1mu,zg.1no,zg.1oi,zg.1pc,zg.1q7,zg.1r1,zg.1tk,zg.1ue,zg.1v8,zg.1w2,zg.1wx,zg.1xr,zg.1yl,zg.1zf,zg.20a,zg.214,zg.21y,zg.22s,zg.23n,zg.24h,zg.25b,zg.265,zg.270,zg.27u,zg.28o,zg.29i,zg.2ad,zg.2dq,zg.2h3,104.fn,104.gj,104.he,104.i9,104.j5,104.k0,104.kv,104.lr,104.mm,104.nh,104.od,104.p8,104.q3,104.qy,104.ru,104.sp,104.1bu,104.1cp,104.1dk,104.1jn,104.1kj,104.1m9,104.1n5,104.1o0,104.1ov,104.1pr,104.1qm,104.1rh,104.1t8,104.1u3,104.1uy,104.1vu,104.1wp,104.1xk,104.1yg,104.1zb,104.206,104.212,104.21x,104.22s,104.23n,104.24j,104.25e,104.269,104.275,104.280,104.28v,104.29r,104.2am,104.2cd,104.2d8,10s.g8,10s.h4,10s.i1,10s.ix,10s.ju,10s.kq,10s.lm,10s.mj,10s.nf,10s.oc,10s.p8,10s.q5,10s.r1,10s.rx,10s.su,10s.tq,10s.1br,10s.1cn,10s.1dk,10s.1eg,10s.1h6,10s.1jv,10s.1kr,10s.1lo,10s.1q6,10s.1r2,10s.1sv,10s.1ts,10s.1uo,10s.1vk,10s.1wh,10s.1xd,10s.1ya,10s.1z6,10s.203,10s.20z,10s.21v,10s.22s,10s.23o,10s.24l,10s.25h,10s.26e,10s.27a,10s.286,10s.293,10s.29z,10s.2aw,10s.2bs,10s.2cp,10s.2dl,10s.2h7,11g.g1,11g.gz,11g.hx,11g.iv,11g.jt,11g.kr,11g.lp,11g.mn,11g.nl,11g.oj,11g.ph,11g.qf,11g.rd,11g.sb,11g.t9,11g.u7,11g.v5,11g.w3,11g.1e0,11g.1ey,11g.1fw,11g.1gu,11g.1iq,11g.1jo,11g.1km,11g.1lk,11g.1ng,11g.1oe,11g.1pc,11g.1qa,11g.1t3,11g.1u1,11g.1uz,11g.1vx,11g.1wv,11g.1xt,11g.1yr,11g.1zp,11g.20n,11g.21l,11g.22j,11g.23h,11g.24f,11g.25d,11g.26b,11g.279,11g.287,11g.295,11g.2a3,11g.2b1,11g.2bz,11g.2cx,11g.2dv,11g.2et,11g.2fq,11g.2hm,124.fp,124.go,124.hn,124.in,124.jm,124.kl,124.lk,124.mk,124.nj,124.oi,124.pi,124.qh,124.rg,124.sg,124.tf,124.vd,124.zb,124.1e0,124.1ez,124.1fz,124.1gy,124.1hx,124.1iw,124.1jw,124.1kv,124.1lu,124.1mu,124.1nt,124.1ps,124.1qr,124.1rq,124.1sp,124.1tp,124.1uo,124.1vn,124.1wn,124.1xm,124.1yl,124.1zk,124.20k,124.21j,124.22i,124.23i,124.24h,124.25g,124.26g,124.27f,124.28e,124.29d,124.2ad,124.2bc,124.2cb,124.2db,124.2ea,124.2f9,124.2g8,12s.gi,12s.hj,12s.ik,12s.jl,12s.km,12s.ln,12s.mo,12s.nq,12s.or,12s.ps,12s.qt,12s.ru,12s.sv,12s.tw,12s.ux,12s.y1,12s.1dh,12s.1ej,12s.1fk,12s.1gl,12s.1hm,12s.1in,12s.1jo,12s.1kp,12s.1lq,12s.1mr,12s.1nt,12s.1ou,12s.1pv,12s.1qw,12s.1rx,12s.1sy,12s.1tz,12s.1v0,12s.1w1,12s.1x3,12s.1y4,12s.1z5,12s.206,12s.217,12s.228,12s.239,12s.24a,12s.25c,12s.26d,12s.27e,12s.28f,12s.29g,12s.2ah,12s.2bi,12s.2cj,12s.2dk,12s.2em,12s.2fn,12s.2go,12s.2hp,13g.f8,13g.gb,13g.he,13g.ih,13g.jk,13g.kn,13g.lr,13g.mu,13g.nx,13g.p0,13g.q3,13g.r6,13g.s9,13g.td,13g.ug,13g.vj,13g.wm,13g.xp,13g.1bu,13g.1cx,13g.1e0,13g.1g6,13g.1h9,13g.1id,13g.1jg,13g.1kj,13g.1lm,13g.1mp,13g.1ns,13g.1ov,13g.1py,13g.1r2,13g.1s5,13g.1t8,13g.1ub,13g.1ve,13g.1wh,13g.1xk,13g.1yn,13g.1zr,13g.20u,13g.21x,13g.230,13g.243,13g.256,13g.269,13g.27d,13g.28g,13g.29j,13g.2am,13g.2bp,13g.2cs,13g.2dv,13g.2ey,13g.2g2,13g.2h5,13g.2lh,144.dt,144.ey,144.g3,144.h9,144.ie,144.jj,144.kp,144.lu,144.n0,144.o5,144.pa,144.qg,144.sq,144.tw,144.v1,144.w7,144.xc,144.1ca,144.1df,144.1gv,144.1j6,144.1kc,144.1lh,144.1mm,144.1ns,144.1ox,144.1q2,144.1r8,144.1sd,144.1tj,144.1uo,144.1vt,144.1wz,144.1y4,144.1za,144.20f,144.21k,144.22q,144.23v,144.250,144.266,144.27b,144.28h,144.29m,144.2ar,144.2bx,144.2d2,144.2e7,144.2fd,144.2m9,14s.64,14s.df,14s.en,14s.fv,14s.h3,14s.ib,14s.ji,14s.kq,14s.ly,14s.n6,14s.oe,14s.ta,14s.ui,14s.vp,14s.1cs,14s.1gg,14s.1ho,14s.1k4,14s.1lb,14s.1mj,14s.1nr,14s.1oz,14s.1q7,14s.1rf,14s.1sn,14s.1tv,14s.1v3,14s.1wb,14s.1xi,14s.1yq,14s.1zy,14s.216,14s.22e,14s.23m,14s.24u,14s.262,14s.27a,14s.28i,14s.29p,14s.2ax,14s.2c5,14s.2dd,14s.2el,14s.2ft,14s.2lw,14s.2n4,15g.57,15g.6i,15g.bp,15g.d0,15g.ea,15g.fl,15g.gw,15g.i7,15g.jh,15g.ks,15g.m3,15g.ne,15g.sl,15g.tv,15g.1fy,15g.1h9,15g.1ik,15g.1l5,15g.1mg,15g.1nr,15g.1p1,15g.1qc,15g.1rn,15g.1sy,15g.1u8,15g.1vj,15g.1wu,15g.1y5,15g.1zf,15g.20q,15g.221,15g.23c,15g.24m,15g.25x,15g.278,15g.28j,15g.29t,15g.2b4,15g.2cf,15g.2dq,15g.2f0,15g.2gb,15g.2hm,15g.2k7,15g.2mt,164.48,164.5n,164.72,164.8g,164.9v,164.ba,164.co,164.e3,164.fi,164.gw,164.ib,164.jq,164.l5,164.mj,164.ny,164.tl,164.10m,164.121,164.1g4,164.1hj,164.1kc,164.1lr,164.1n6,164.1ok,164.1pz,164.1re,164.1ss,164.1u7,164.1vm,164.1x1,164.1yf,164.1zu,164.219,164.22n,164.242,164.25h,164.26v,164.28a,164.29p,164.2b4,164.2ci,164.2dx,164.2fc,164.2gq,164.2i5,164.2jk,164.2ky,164.2md,164.2ns,164.2p7,16s.62,16s.7l,16s.93,16s.am,16s.c4,16s.dn,16s.f5,16s.go,16s.i7,16s.jp,16s.l8,16s.mq,16s.o9,16s.ra,16s.ub,16s.vt,16s.10d,16s.11w,16s.17y,16s.1h1,16s.1ik,16s.1ll,16s.1n3,16s.1om,16s.1q4,16s.1rn,16s.1t5,16s.1uo,16s.1w7,16s.1xp,16s.1z8,16s.20q,16s.229,16s.23r,16s.25a,16s.26s,16s.28b,16s.29t,16s.2bc,16s.2cv,16s.2ed,16s.2fw,16s.2he,16s.2ix,16s.2kf,16s.2ly,16s.2ng,16s.2oz,16s.2qh,17g.0,17g.1o,17g.50,17g.6o,17g.8c,17g.a0,17g.bo,17g.dc,17g.f0,17g.go,17g.ic,17g.k0,17g.lo,17g.nc,17g.p0,17g.qo,17g.u0,17g.vo,17g.10o,17g.12c,17g.140,17g.1j0,17g.1ko,17g.1mc,17g.1po,17g.1rc,17g.1t0,17g.1uo,17g.1wc,17g.1zo,17g.21c,17g.230,17g.24o,17g.26c,17g.280,17g.29o,17g.2bc,17g.2d0,17g.2eo,17g.2gc,17g.2i0,17g.2jo,17g.2lc,17g.2n0,17g.2oo,17g.2qc,184.0,184.5k,184.7f,184.99,184.b4,184.cz,184.et,184.go,184.ij,184.o3,184.tn,184.111,184.12w,184.14r,184.16l,184.1jk,184.1lf,184.1n9,184.208,184.223,184.23x,184.25s,184.27n,184.29h,184.2bc,184.2d7,184.2f1,184.2gw,184.2ir,184.2kl,184.2mg,184.2ob,184.2q5,18s.ir,18s.ku,18s.r3,18s.t6,18s.zf,18s.11i,18s.13l,18s.15o,18s.17r,18s.1wr,18s.1yu,18s.20x,18s.230,18s.253,18s.276,18s.299,18s.2bc,18s.2df,18s.2fi,18s.2hl,18s.2jo,19g.go,19g.nt,19g.zq,19g.123,19g.14h,19g.16v,19g.21t,19g.247,19g.26l,19g.28y,1a4.m8,1a4.xc,1a4.104,1a4.12w,1a4.15o,1a4.18g,1a4.1uo,1a4.25s,1a4.28k,1a4.2gw".split(','),L=[];
+    for(var i=0;i<raw.length;i++){var a=raw[i].split('.');L.push([parseInt(a[0],36)/10-90,parseInt(a[1],36)/10-180])}
+    var D=Math.PI/180, hub=[55.75,37.6];
+    var T=[
+      {n:'Европа',p:[48.85,2.35]},{n:'LATAM',p:[-23.5,-46.6]},{n:'Мехико',p:[19.4,-99.1],s:1},
+      {n:'Африка',p:[-26.2,28.0]},{n:'Лагос',p:[6.5,3.4],s:1},{n:'Азия',p:[19.0,72.8]},
+      {n:'Джакарта',p:[-6.2,106.8],s:1},{n:'MENA',p:[25.2,55.3]},{n:'Каир',p:[30.0,31.2],s:1}
+    ];
+    var gx=g.getContext('2d'),W,H,R,cx,cy,dpr=Math.min(window.devicePixelRatio||1,2);
+    var rot=-30,tilt=-18,vel=0.12,drag=false,lx=0,t0=performance.now();
+    function size(){var r=g.getBoundingClientRect();W=r.width;H=r.height;g.width=W*dpr;g.height=H*dpr;gx.setTransform(dpr,0,0,dpr,0,0);R=Math.min(W,H)*0.42;cx=W/2;cy=H/2}
+    function v3(lat,lon){var la=lat*D,lo=lon*D;return[Math.cos(la)*Math.sin(lo),Math.sin(la),Math.cos(la)*Math.cos(lo)]}
+    function prj(v,k){k=k||1;var ry=rot*D,rx=tilt*D;
+      var x=v[0]*Math.cos(ry)+v[2]*Math.sin(ry), z=-v[0]*Math.sin(ry)+v[2]*Math.cos(ry), y=v[1];
+      var y2=y*Math.cos(rx)-z*Math.sin(rx), z2=y*Math.sin(rx)+z*Math.cos(rx);
+      return[cx+x*R*k, cy-y2*R*k, z2]}
+    function slerp(a,b,t){var d=Math.acos(Math.max(-1,Math.min(1,a[0]*b[0]+a[1]*b[1]+a[2]*b[2]))),s=Math.sin(d);
+      var p=Math.sin((1-t)*d)/s,q=Math.sin(t*d)/s;return[a[0]*p+b[0]*q,a[1]*p+b[1]*q,a[2]*p+b[2]*q]}
+    var LV=L.map(function(p){return v3(p[0],p[1])}), HV=v3(hub[0],hub[1]);
+    T.forEach(function(t){t.v=v3(t.p[0],t.p[1])});
+    function draw(now){
+      var time=(now-t0)/1000;
+      gx.clearRect(0,0,W,H);
+      var gr=gx.createRadialGradient(cx-R*.3,cy-R*.35,R*.1,cx,cy,R*1.05);
+      gr.addColorStop(0,'rgba(255,255,255,.20)');gr.addColorStop(1,'rgba(255,255,255,.03)');
+      gx.fillStyle=gr;gx.beginPath();gx.arc(cx,cy,R,0,7);gx.fill();
+      gx.strokeStyle='rgba(255,255,255,.35)';gx.lineWidth=1;gx.stroke();
+      for(var i=0;i<LV.length;i++){var p=prj(LV[i]);if(p[2]<0)continue;
+        gx.globalAlpha=.25+.75*p[2];gx.fillStyle='#fff';gx.beginPath();gx.arc(p[0],p[1],Math.max(1,R*.0085),0,7);gx.fill()}
+      gx.globalAlpha=1;
+      T.forEach(function(t,k){
+        var ph=((time*0.35+k*0.13)%1.6), head=Math.min(1,ph), tail=Math.max(0,ph-0.55);
+        gx.beginPath();var st=false;
+        for(var j=0;j<=40;j++){var u=j/40;var v=slerp(HV,t.v,u),lift=1+0.22*Math.sin(Math.PI*u);var p=prj(v,lift);
+          if(p[2]<-0.15||u<tail||u>head){st=false;continue}
+          st?gx.lineTo(p[0],p[1]):gx.moveTo(p[0],p[1]);st=true}
+        gx.strokeStyle=t.s?'rgba(255,255,255,.55)':'#fff';gx.lineWidth=t.s?1.2:2;gx.stroke();
+        var e=prj(t.v);if(e[2]>0){
+          gx.fillStyle='#fff';gx.beginPath();gx.arc(e[0],e[1],t.s?3:4.5,0,7);gx.fill();
+          var pulse=(time*0.8+k*0.2)%1;gx.strokeStyle='rgba(255,255,255,'+(1-pulse)*.8+')';gx.lineWidth=1.5;gx.beginPath();gx.arc(e[0],e[1],4+pulse*16,0,7);gx.stroke();
+          if(!t.s){gx.font='500 12px "JetBrains Mono",monospace';var tw=gx.measureText(t.n).width;
+            gx.fillStyle='rgba(8,18,46,.75)';gx.beginPath();gx.roundRect?gx.roundRect(e[0]+10,e[1]-11,tw+14,22,11):gx.rect(e[0]+10,e[1]-11,tw+14,22);gx.fill();
+            gx.fillStyle='#fff';gx.fillText(t.n,e[0]+17,e[1]+4)}}
+      });
+      var h=prj(HV);if(h[2]>0){gx.fillStyle='#fff';gx.beginPath();gx.arc(h[0],h[1],7,0,7);gx.fill();
+        gx.fillStyle=getComputedStyle(g.parentNode.parentNode).backgroundColor;gx.beginPath();gx.arc(h[0],h[1],3,0,7);gx.fill();
+        gx.font='600 12px "JetBrains Mono",monospace';gx.fillStyle='#fff';gx.fillText('RANGEMEDIA HQ',h[0]+12,h[1]-10)}
     }
-    ctx.globalAlpha=1;
+    function loop(now){if(!drag)rot+=vel;draw(now);requestAnimationFrame(loop)}
+    size();rot=-30;draw(t0+1400);
+    window.addEventListener('resize',function(){size();draw(performance.now())});
+    g.parentNode.addEventListener('pointerdown',function(e){drag=true;lx=e.clientX});
+    window.addEventListener('pointermove',function(e){if(!drag)return;rot-=(e.clientX-lx)*0.35;lx=e.clientX;if(reduce)draw(performance.now())});
+    window.addEventListener('pointerup',function(){drag=false});
+    if(!reduce)requestAnimationFrame(loop);
   }
-  function loop(){t+=0.006;draw();requestAnimationFrame(loop)}
-  size();draw();
-  window.addEventListener('resize',function(){size();draw()});
-  if(!still) requestAnimationFrame(loop);
+  /* ---------- Ridge lines in CTA ---------- */
+  var c=document.getElementById('ridge'); if(!c) return;
+  var ctx=c.getContext('2d'), w=0,h=0,dpr2=Math.min(window.devicePixelRatio||1,2), t=0;
+  function size2(){var r=c.getBoundingClientRect();w=r.width;h=r.height;c.width=w*dpr2;c.height=h*dpr2;ctx.setTransform(dpr2,0,0,dpr2,0,0)}
+  function y(x,i,t){var k=i/30;return h*(0.1+k*0.9)+Math.sin(x*0.004+t*0.6+i*0.18)*h*0.06+Math.sin(x*0.011-t*0.35+i*0.07)*h*0.03-Math.exp(-Math.pow((x-w*(0.7+0.06*Math.sin(t*0.2)))/(w*0.16),2))*h*0.2*(1-k*0.6)}
+  function draw2(){ctx.clearRect(0,0,w,h);for(var i=0;i<30;i++){ctx.beginPath();for(var x=-10;x<=w+10;x+=8){var yy=y(x,i,t);x<0?ctx.moveTo(x,yy):ctx.lineTo(x,yy)}ctx.globalAlpha=0.08+0.22*(i/30);ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke()}ctx.globalAlpha=1}
+  function loop2(){t+=0.005;draw2();requestAnimationFrame(loop2)}
+  size2();draw2();window.addEventListener('resize',function(){size2();draw2()});
+  if(!reduce)requestAnimationFrame(loop2);
 })();
 </script>
 </body>
