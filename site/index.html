@@ -11,7 +11,7 @@
 <meta name="description" content="RangeMedia — маркетинговое агентство полного цикла. Блогеры и СМИ, производство контента, ТВ и наружная реклама, спонсорство, digital и AI-аватары в России и по всему миру.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: светлая «бумага» с синим отливом, огромная прописная типографика, одна кобальтовая панель с живыми линиями-хребтами (Range), тёмно-синий блок флагманского проекта, затем строгие списки. */
 :root{
@@ -57,7 +57,7 @@ p{margin:0}
 .logo-mark{width:auto;height:23px;flex:none}
 .hdr .logo{font-size:20px;gap:16px}
 @media (max-width:420px){.hdr .logo{font-size:15px;gap:10px}.hdr .logo-mark{height:18px}}
-.cosmos-h1 .key{position:relative;display:inline-block;white-space:nowrap;font-size:1.06em;color:#fff;-webkit-text-fill-color:#fff;padding-right:.08em}
+.cosmos-h1 .key{position:relative;display:inline-block;white-space:nowrap;font-size:1.16em;color:#fff;-webkit-text-fill-color:#fff;padding-right:.08em}
 .cosmos-h1 .key svg{position:absolute;left:-3%;bottom:-.16em;width:106%;height:.36em;overflow:visible}
 .cosmos-h1 .key path{fill:none;stroke:#6F88FF;stroke-width:3.2;stroke-linecap:round;stroke-dasharray:240;stroke-dashoffset:0;animation:keydraw 1.4s .6s cubic-bezier(.6,0,.2,1) both}
 
@@ -264,14 +264,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 @keyframes live{70%{box-shadow:0 0 0 8px rgba(92,240,166,0)}100%{box-shadow:0 0 0 0 rgba(92,240,166,0)}}
 .pwm-wrap{position:relative;margin-top:clamp(8px,3vw,40px)}
 #pwm{display:block;width:100%;height:15vw;max-width:100%;touch-action:pan-y;cursor:crosshair}
-.pwm-hint{position:absolute;right:0;bottom:-24px;color:rgba(238,242,255,.6);font-size:11px;display:inline-flex;align-items:center;gap:8px;transition:opacity .6s}
+.pwm-hint{display:none!important;position:absolute;right:0;bottom:-24px;color:rgba(238,242,255,.6);font-size:11px;display:inline-flex;align-items:center;gap:8px;transition:opacity .6s}
 .pwm-hint.gone{opacity:0}
 .pwm-hint .ring{width:8px;height:8px;border-radius:50%;background:#9DB0FF;box-shadow:0 0 0 0 rgba(157,176,255,.6);animation:live 1.6s infinite}
 .h-touch{display:none}
 @media (hover:none){.h-desk{display:none}.h-touch{display:inline}}
 .cosmos-row{display:grid;grid-template-columns:1.25fr 1fr;gap:clamp(24px,4vw,64px);align-items:end;margin-top:clamp(18px,3vw,36px);border-top:1px solid rgba(238,242,255,.16);padding-top:clamp(20px,3vw,32px)}
 .cosmos-h1{font-size:clamp(30px,4.2vw,62px);line-height:1;letter-spacing:-.04em;text-transform:uppercase;font-weight:500;background:linear-gradient(100deg,#fff 30%,#AFC0FF 70%,#fff 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 9s ease-in-out infinite}
-.cosmos-h1 .serif{font-size:1.06em;color:#9DB0FF;-webkit-text-fill-color:#9DB0FF}
+.cosmos-h1 .serif{font-size:1.16em;color:#9DB0FF;-webkit-text-fill-color:#9DB0FF}
 @keyframes sheen{0%,100%{background-position:0 0}50%{background-position:100% 0}}
 .glass-pill{display:inline-block;-webkit-text-fill-color:#fff;font-family:var(--f-mono);font-size:.28em;letter-spacing:.14em;font-weight:500;vertical-align:middle;padding:.75em 1.4em;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transform:translateY(-.3em);white-space:nowrap}
 .cosmos-side{display:flex;flex-direction:column;gap:22px;min-width:0}
@@ -298,6 +298,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 :root:not(.past-cosmos) .hdr .nav a{opacity:.7}
 :root:not(.past-cosmos) body::before{background:#040817}
 .hdr,.hdr .logo,.hdr .nav a{transition:background .4s,color .4s,border-color .4s}
+/* Serif accents: larger, heavier, never split across lines */
+h2 .serif,h3 .serif,.cosmos-h1 .serif,.about-lead em{font-weight:600;white-space:nowrap;letter-spacing:-.015em}
+h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
+.flag h2 .serif{color:var(--ice)}
+.sec-head h2 .serif,.anyad-head h3 .serif,.flag h2 .serif{font-size:1.22em;line-height:.8}
+.about-lead em{font-size:1.2em;line-height:.9}
 /* ===== FX layer ===== */
 .fx{position:relative;isolation:isolate}
 .fx::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;opacity:0;transition:opacity .35s;background:radial-gradient(260px circle at var(--sx,50%) var(--sy,50%),rgba(130,155,255,.22),transparent 65%)}
@@ -746,6 +752,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       g.fillStyle=sp>0.15?'rgba(170,190,255,'+(0.6+sp*0.4)+')':(p.m?'#6F88FF':'#FFFFFF');
       g.fillRect(p.x,p.y,sz,sz)}
     if(ghost){var gr=g.createRadialGradient(mx,my,0,mx,my,R*.9);gr.addColorStop(0,'rgba(170,190,255,.35)');gr.addColorStop(1,'rgba(170,190,255,0)');g.fillStyle=gr;g.beginPath();g.arc(mx,my,R*.9,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(mx,my,4,0,7);g.fill()}
+    if(ghost){g.font='500 11px "JetBrains Mono", monospace';g.fillStyle='rgba(238,242,255,.7)';var lab=matchMedia('(hover:none)').matches?'КОСНИТЕСЬ':'ПРОВЕДИТЕ КУРСОРОМ';var lx=Math.min(mx+14,W-g.measureText(lab).width-4);g.fillText(lab,Math.max(4,lx),Math.max(14,my-14))}
   }
   function frame(t){sDraw(t);pDraw(t);requestAnimationFrame(frame)}
   sSize();build(!reduce);
@@ -782,7 +789,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       if(c.nodeType===3){var parts=c.textContent.split(/(\s+)/),f=document.createDocumentFragment();
         parts.forEach(function(w){if(!w)return;if(/^\s+$/.test(w)){f.appendChild(document.createTextNode(w));return}
           var o=document.createElement('span');o.className='w';var inn=document.createElement('span');inn.textContent=w;inn.style.setProperty('--i',i++);o.appendChild(inn);f.appendChild(o)});
-        n.replaceChild(f,c)}else if(c.nodeType===1&&c.tagName!=='SVG'&&c.tagName!=='BR'){walk(c)}})})(h);
+        n.replaceChild(f,c)}else if(c.nodeType===1&&(c.classList.contains('serif')||c.tagName==='EM')){var o2=document.createElement('span');o2.className='w';var i2=document.createElement('span');i2.style.setProperty('--i',i++);n.replaceChild(o2,c);i2.appendChild(c);o2.appendChild(i2)}else if(c.nodeType===1&&c.tagName!=='SVG'&&c.tagName!=='BR'){walk(c)}})})(h);
     h.classList.add('rv');io.observe(h)});
   /* 2. Count-up numbers (start when reached, also if the page jumped past them) */
   var pend=[];
