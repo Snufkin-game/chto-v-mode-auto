@@ -337,19 +337,29 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .lm-note{margin-top:6px;color:var(--ink-soft);font-size:11px}
 @media (max-width:600px){.lm-head{align-items:center}.lm-btn{width:40px;height:40px}.lm-scroller{grid-auto-columns:72%}}
 
-/* №1 lead */
-.lead1{display:flex;align-items:center;gap:clamp(14px,2vw,28px);margin-top:clamp(4px,1.5vw,16px);font-weight:500}
-.no1{font-size:clamp(96px,15vw,232px);font-weight:600;letter-spacing:-.07em;line-height:.8;background:linear-gradient(160deg,#fff 20%,#9DB0FF 55%,#3352FF 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
-.l1t{font-size:clamp(30px,4.8vw,76px);line-height:.95;letter-spacing:-.04em;text-transform:uppercase;color:#fff}
-.cosmos-sub{font-size:clamp(18px,2.2vw,30px)!important;line-height:1.15!important;max-width:none!important;margin-top:4px}
 .svc-main h3::after{content:"№1";font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;vertical-align:top;margin-left:10px;padding:4px 8px;border-radius:999px;background:#fff;color:var(--paper);position:relative;top:.6em}
 .svc-main h3{color:#9DB0FF}
+
+/* №1 band */
+.no1-band{position:relative;overflow:hidden;isolation:isolate;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:clamp(20px,4vw,64px);margin-top:clamp(40px,6vw,80px);padding:clamp(24px,4vw,56px);border-radius:28px;border:1px solid var(--line);background:linear-gradient(135deg,rgba(51,82,255,.16),rgba(255,255,255,.02) 55%)}
+.no1-glow{position:absolute;z-index:-1;width:520px;height:520px;left:-160px;top:-200px;border-radius:50%;background:radial-gradient(closest-side,rgba(51,82,255,.45),transparent);pointer-events:none}
+.no1-num{font-size:clamp(120px,19vw,300px);font-weight:600;letter-spacing:-.08em;line-height:.78;padding-right:.05em;background:linear-gradient(120deg,#fff 0%,#C9D4FF 35%,#3352FF 70%,#fff 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sheen 7s ease-in-out infinite}
+.no1-body{display:flex;flex-direction:column;gap:16px;min-width:0}
+.no1-body .mono{color:#9DB0FF}
+.no1-h{font-size:clamp(30px,4vw,60px);line-height:1;letter-spacing:-.04em;text-transform:uppercase;font-weight:500}
+.no1-body p{color:var(--ink-soft);max-width:52ch;font-size:clamp(15px,1.2vw,17px)}
+.no1-facts{display:flex;flex-wrap:wrap;gap:10px 28px;border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
+.no1-facts div{display:flex;flex-direction:column}
+.no1-facts b{font-size:clamp(22px,2vw,30px);font-weight:500;letter-spacing:-.03em}
+.no1-facts span{font-size:12px;color:var(--ink-soft)}
+@media (max-width:760px){.no1-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.no1-facts b{font-size:20px}.no1-facts span{font-size:11px}.no1-band{grid-template-columns:1fr;gap:8px}.no1-num{font-size:clamp(110px,34vw,160px)}}
+@media (prefers-reduced-motion:reduce){.no1-num{animation:none}}
 
 /* Serif accents: larger, heavier, never split across lines */
 h2 .serif,h3 .serif,.cosmos-h1 .serif,.about-lead em{font-weight:600;white-space:nowrap;letter-spacing:-.015em}
 h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
 .flag h2 .serif{color:var(--ice)}
-.sec-head h2 .serif,.anyad-head h3 .serif,.flag h2 .serif{font-size:1.22em;line-height:.8}
+.sec-head h2 .serif,.anyad-head h3 .serif,.flag h2 .serif,.no1-h .serif{font-size:1.22em;line-height:.8}
 .about-lead em{font-size:1.2em;line-height:.9}
 /* ===== FX layer ===== */
 .fx{position:relative;isolation:isolate}
@@ -453,8 +463,7 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
         <span>Москва <b id="clock">--:--</b> UTC+3</span>
       </div>
 
-      <h1 class="lead1"><span class="no1">№1</span><span class="l1t">по закупке<br>рекламы</span></h1>
-      <p class="cosmos-h1 cosmos-sub">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></p>
+      <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h1>
 
       <div class="pwm-wrap">
         <canvas id="pwm" role="img" aria-label="RangeMedia"></canvas>
@@ -481,6 +490,21 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
   </section>
 
   <div class="wrap">
+    <section class="no1-band" id="buying" aria-label="Закупка рекламы">
+      <div class="no1-glow" aria-hidden="true"></div>
+      <div class="no1-num" aria-hidden="true">№1</div>
+      <div class="no1-body">
+        <span class="mono">Главная экспертиза RangeMedia</span>
+        <h2 class="no1-h">по <span class="serif">закупке</span> рекламы</h2>
+        <p>Закупаем рекламу у блогеров, в Telegram, на ТВ, в наружке и digital напрямую — без посредников и лишних наценок. Отчёт по каждому размещению.</p>
+        <div class="no1-facts">
+          <div><b>30M+</b><span>аудитория авторов</span></div>
+          <div><b>25+</b><span>каналов размещения</span></div>
+          <div><b>12</b><span>брендов-лидеров</span></div>
+        </div>
+      </div>
+    </section>
+
     <div class="world" id="geo" style="margin-top:clamp(40px,6vw,80px)">
       <div class="world-text">
         <span class="chip mono">● География RangeMedia</span>
@@ -872,7 +896,7 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
   function run(el){var m=el.dataset.m.split('|'),to=+m[1],t0=performance.now();
     (function step(t){var k=Math.min(1,(t-t0)/1400),v=Math.round(to*(1-Math.pow(1-k,4)));el.firstChild.textContent=m[0]+v+m[2];if(k<1)requestAnimationFrame(step)})(t0)}
   function check(){pend=pend.filter(function(el){if(el.getBoundingClientRect().top<innerHeight*0.9){run(el);return false}return true})}
-  [].slice.call(document.querySelectorAll('.stat b,.gcard b,.adv-num')).forEach(function(el){var tn=el.firstChild;if(!tn||tn.nodeType!==3)return;var mm=tn.textContent.match(/^(\D*)(\d+)(\D*)$/);if(!mm)return;
+  [].slice.call(document.querySelectorAll('.stat b,.adv-num')).forEach(function(el){var tn=el.firstChild;if(!tn||tn.nodeType!==3)return;var mm=tn.textContent.match(/^(\D*)(\d+)(\D*)$/);if(!mm)return;
     if(el.getBoundingClientRect().top<innerHeight)return;el.dataset.m=mm[1]+'|'+mm[2]+'|'+mm[3];tn.textContent=mm[1]+'0'+mm[3];pend.push(el)});
   addEventListener('scroll',check,{passive:true});
   /* 3. Marquees react to scroll speed and direction */
