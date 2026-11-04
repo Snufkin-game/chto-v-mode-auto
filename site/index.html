@@ -60,7 +60,7 @@ p{margin:0}
 .cosmos-h1 .key{position:relative;display:inline-block;white-space:nowrap;font-size:1.06em;color:#fff;-webkit-text-fill-color:#fff;padding-right:.08em}
 .cosmos-h1 .key svg{position:absolute;left:-3%;bottom:-.16em;width:106%;height:.36em;overflow:visible}
 .cosmos-h1 .key path{fill:none;stroke:#6F88FF;stroke-width:3.2;stroke-linecap:round;stroke-dasharray:240;stroke-dashoffset:0;animation:keydraw 1.4s .6s cubic-bezier(.6,0,.2,1) both}
-.cosmos-h1 .key .arr2{font-family:var(--f-display);font-style:normal;font-size:.5em;vertical-align:.9em;margin-left:.12em;color:#6F88FF;-webkit-text-fill-color:#6F88FF}
+
 @keyframes keydraw{from{stroke-dashoffset:240}to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){.cosmos-h1 .key path{animation:none}}
 .logo-word{letter-spacing:.16em;font-weight:500}.logo-word b{font-weight:500}.logo-word i{font-style:normal;font-weight:300;color:var(--cobalt)}
@@ -264,7 +264,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 @keyframes live{70%{box-shadow:0 0 0 8px rgba(92,240,166,0)}100%{box-shadow:0 0 0 0 rgba(92,240,166,0)}}
 .pwm-wrap{position:relative;margin-top:clamp(8px,3vw,40px)}
 #pwm{display:block;width:100%;height:15vw;max-width:100%;touch-action:pan-y;cursor:crosshair}
-.pwm-hint{position:absolute;right:0;bottom:-24px;color:rgba(238,242,255,.45);font-size:11px}
+.pwm-hint{position:absolute;right:0;bottom:-24px;color:rgba(238,242,255,.6);font-size:11px;display:inline-flex;align-items:center;gap:8px;transition:opacity .6s}
+.pwm-hint.gone{opacity:0}
+.pwm-hint .ring{width:8px;height:8px;border-radius:50%;background:#9DB0FF;box-shadow:0 0 0 0 rgba(157,176,255,.6);animation:live 1.6s infinite}
 .h-touch{display:none}
 @media (hover:none){.h-desk{display:none}.h-touch{display:inline}}
 .cosmos-row{display:grid;grid-template-columns:1.25fr 1fr;gap:clamp(24px,4vw,64px);align-items:end;margin-top:clamp(18px,3vw,36px);border-top:1px solid rgba(238,242,255,.16);padding-top:clamp(20px,3vw,32px)}
@@ -369,18 +371,18 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
     <div class="cosmos-glow" aria-hidden="true"></div>
     <div class="wrap cosmos-inner">
       <div class="cosmos-top mono">
-        <span><i class="live"></i>RangeMedia · On air</span>
+        <span><i class="live"></i>Принимаем проекты на 2026</span>
         <span class="hide-s">Россия → Европа · LATAM · Африка · Азия · MENA</span>
         <span>Москва <b id="clock">--:--</b> UTC+3</span>
       </div>
 
       <div class="pwm-wrap">
         <canvas id="pwm" role="img" aria-label="RangeMedia"></canvas>
-        <span class="pwm-hint mono"><span class="h-desk">Проведите курсором по названию</span><span class="h-touch">Коснитесь названия</span></span>
+        <span class="pwm-hint mono" id="pwmHint"><i class="ring"></i><span class="h-desk">Проведите курсором — буквы оживут</span><span class="h-touch">Коснитесь — буквы оживут</span></span>
       </div>
 
       <div class="cosmos-row">
-        <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<span class="arr2" aria-hidden="true">↗</span><svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h1>
+        <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h1>
         <div class="cosmos-side">
           <p class="rot" aria-live="polite">Запускаем <span class="slot" id="slotA">ТВ-рекламу</span><br><span class="slot" id="slotB">в Европе</span></p>
           <div class="hero-cta">
@@ -693,14 +695,15 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
     for(var y=0;y<H;y+=gap)for(var x=0;x<oc.width;x+=gap){if(d[(y*oc.width+x)*4+3]>140){
       var q=old[P.length];P.push({tx:x,ty:y,x:q?q.x:(scatter?Math.random()*W:x),y:q?q.y:(scatter?Math.random()*H*2-H/2:y),vx:0,vy:0,m:two?y>splitY:x>splitX})}}
   }
-  function pt(e){var r=c.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top}
+  var touched=false,hint=document.getElementById('pwmHint');
+  function pt(e){var r=c.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;if(!touched){touched=true;setTimeout(function(){hint&&hint.classList.add('gone')},1500)}}
   c.addEventListener('pointermove',pt);c.addEventListener('pointerdown',function(e){pt(e);down=true;wave=mx});
   c.addEventListener('pointerleave',function(){mx=my=-1e4;down=false});window.addEventListener('pointerup',function(){down=false;if(matchMedia('(hover:none)').matches){mx=my=-1e4}});
   function pDraw(t){
     g.clearRect(0,0,W,H);
-    var R=Math.max(50,W*0.07),R2=R*R,sz=gap*0.62;
+    var R=Math.max(50,W*0.07),R2=R*R,sz=gap*0.62,ghost=false;
     if(wave>=0){wave+=W*0.012;if(wave>W*1.3)wave=-1}
-    if(!reduce&&wave<0&&((t/1000)%7)<0.02)wave=-W*0.2;
+    if(!touched&&!reduce){var ph=t-born-1400,per=7000;if(ph>0){var k=(ph%per)/2200;if(k<=1){ghost=true;var e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;mx=-R+e*(W+2*R);my=H*.5+Math.sin(k*Math.PI*2)*H*.28}else{mx=my=-1e4}}}
     for(var i=0;i<P.length;i++){var p=P[i];
       var dx=p.x-mx,dy=p.y-my,dd=dx*dx+dy*dy;
       if(dd<R2){var f=(1-dd/R2)*(down?14:6),a=Math.atan2(dy,dx);p.vx+=Math.cos(a)*f;p.vy+=Math.sin(a)*f}
@@ -709,6 +712,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       var sp=Math.min(1,(Math.abs(p.vx)+Math.abs(p.vy))/6);
       g.fillStyle=sp>0.15?'rgba(170,190,255,'+(0.6+sp*0.4)+')':(p.m?'#6F88FF':'#FFFFFF');
       g.fillRect(p.x,p.y,sz,sz)}
+    if(ghost){var gr=g.createRadialGradient(mx,my,0,mx,my,R*.9);gr.addColorStop(0,'rgba(170,190,255,.35)');gr.addColorStop(1,'rgba(170,190,255,0)');g.fillStyle=gr;g.beginPath();g.arc(mx,my,R*.9,0,7);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(mx,my,4,0,7);g.fill()}
   }
   function frame(t){sDraw(t);pDraw(t);requestAnimationFrame(frame)}
   sSize();build(!reduce);
