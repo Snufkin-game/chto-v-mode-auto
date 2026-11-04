@@ -303,10 +303,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .sub-h .dim{color:var(--ink-soft)}
 .partners{margin-bottom:clamp(56px,7vw,96px);display:flex;flex-direction:column;gap:14px}
 .partners .sub-h{text-align:center;margin-bottom:18px}
-.pt-row{overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
-.pt-track{display:inline-flex;gap:14px;animation:mq 30s linear infinite;width:max-content}
-.pt-row.rev .pt-track{animation-direction:reverse;animation-duration:36s}
-.pt{display:flex;align-items:center;justify-content:center;gap:.45em;min-width:clamp(230px,26vw,340px);height:clamp(88px,9vw,120px);padding:0 28px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));font-weight:700;font-size:clamp(18px,1.8vw,24px);letter-spacing:.14em;color:var(--ink-soft);white-space:nowrap;transition:color .3s,border-color .3s}
+.pt-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.pt{display:flex;align-items:center;justify-content:center;gap:.4em;height:clamp(92px,9vw,124px);padding:0 18px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));color:var(--ink-soft);white-space:nowrap;transition:color .3s,border-color .3s,transform .3s}
+.pt:hover{color:var(--ink);border-color:#7F96FF;transform:translateY(-3px)}
+.pt-ozon{font-weight:700;font-size:clamp(24px,2.4vw,34px);letter-spacing:.06em}
+.pt-lenta{font-weight:700;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.03em}
+.pt-zewa{font-weight:700;font-style:italic;font-size:clamp(26px,2.6vw,36px);letter-spacing:-.04em}
+.pt-al{font-weight:700;font-size:clamp(14px,1.25vw,17px);letter-spacing:.12em}
+@media (max-width:900px){.pt-grid{grid-template-columns:repeat(2,1fr)}.pt-grid .pt:last-child{grid-column:1/-1}}
 .pt i{font-style:normal;font-weight:300;color:#7F96FF}
 .pt:hover{color:var(--ink);border-color:#7F96FF}
 .lm{margin-bottom:clamp(56px,7vw,96px)}
@@ -329,7 +333,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .lm-pl{font-size:10px;color:var(--ink-soft)}
 .lm-niche{font-size:13px;color:var(--ink-soft);margin-top:10px;line-height:1.35}
 .lm-note{margin-top:6px;color:var(--ink-soft);font-size:11px}
-@media (max-width:600px){.pt{font-size:16px;letter-spacing:.1em;border-radius:18px}.lm-head{align-items:center}.lm-btn{width:40px;height:40px}.lm-scroller{grid-auto-columns:72%}}
+@media (max-width:600px){.pt{border-radius:18px;height:84px}.lm-head{align-items:center}.lm-btn{width:40px;height:40px}.lm-scroller{grid-auto-columns:72%}}
 
 /* Serif accents: larger, heavier, never split across lines */
 h2 .serif,h3 .serif,.cosmos-h1 .serif,.about-lead em{font-weight:600;white-space:nowrap;letter-spacing:-.015em}
@@ -621,8 +625,13 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
       </div>
       <div class="partners">
         <h3 class="sub-h">Лидеры рынка <span class="dim">доверяют нам</span></h3>
-        <div class="pt-row"><div class="pt-track"><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span></div></div>
-        <div class="pt-row rev"><div class="pt-track"><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span><span class="pt">ALABUGA <i>START</i></span><span class="pt">АЛАБУГА <i>ПОЛИТЕХ</i></span></div></div>
+        <div class="pt-grid">
+          <span class="pt pt-ozon">OZON</span>
+          <span class="pt pt-lenta">лента</span>
+          <span class="pt pt-zewa">Zewa</span>
+          <span class="pt pt-al">ALABUGA <i>START</i></span>
+          <span class="pt pt-al">АЛАБУГА <i>ПОЛИТЕХ</i></span>
+        </div>
       </div>
 
       <div class="lm">
