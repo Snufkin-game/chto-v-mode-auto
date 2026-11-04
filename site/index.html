@@ -228,12 +228,12 @@ tbody tr:hover{background:var(--paper-2)}
 .cta-run .marquee-track span::after{background:#fff;width:.18em;height:.18em}
 .cta-run:hover .marquee-track{animation-play-state:paused}
 .contacts{display:grid;grid-template-columns:1.3fr repeat(4,auto);justify-content:space-between;gap:20px 40px;padding-block:36px 40px;align-items:end}
-.contacts .mono{color:rgba(255,255,255,.65);display:block;margin-bottom:6px;font-size:11px}
-.contacts a{text-decoration:none;font-size:clamp(15px,1.3vw,18px);display:inline-block;border-bottom:1px solid rgba(255,255,255,.35);transition:border-color .2s}
+.contacts .mono{color:rgba(255,255,255,.7);display:block;margin-bottom:8px;font-size:12px}
+.contacts a{text-decoration:none;font-size:clamp(17px,1.5vw,21px);display:inline-block;border-bottom:1px solid rgba(255,255,255,.35);transition:border-color .2s}
 .contacts a:hover{border-color:#fff}
-.contacts p{font-size:clamp(18px,1.8vw,24px);line-height:1.2;letter-spacing:-.02em;max-width:20ch}
+.contacts p{font-size:clamp(22px,2.2vw,30px);line-height:1.2;letter-spacing:-.02em;max-width:20ch}
 @media (max-width:900px){.contacts{grid-template-columns:1fr 1fr;justify-content:stretch}.contacts>div:first-child{grid-column:1/-1}}
-@media (max-width:520px){.contacts{gap:18px 16px;padding-block:28px 32px}.contacts a{font-size:15px}}
+@media (max-width:520px){.contacts{gap:22px 16px;padding-block:32px 36px}.contacts a{font-size:16.5px}}
 
 footer{background:var(--navy);color:var(--on-dark-soft)}
 footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:22px}
@@ -298,6 +298,18 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 :root:not(.past-cosmos) .hdr .nav a{opacity:.7}
 :root:not(.past-cosmos) body::before{background:#040817}
 .hdr,.hdr .logo,.hdr .nav a{transition:background .4s,color .4s,border-color .4s}
+/* ===== FX layer ===== */
+.fx{position:relative;isolation:isolate}
+.fx::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;opacity:0;transition:opacity .35s;background:radial-gradient(260px circle at var(--sx,50%) var(--sy,50%),rgba(130,155,255,.22),transparent 65%)}
+.fx:hover::before{opacity:1}
+.fx>*{position:relative;z-index:1}
+.tilt{transition:transform .5s cubic-bezier(.2,.7,.2,1);will-change:transform}
+.rv .w{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:.08em;margin-bottom:-.08em}
+.rv .w>span{display:inline-block;transform:translateY(110%);transition:transform .9s cubic-bezier(.2,.75,.15,1);transition-delay:calc(var(--i)*45ms)}
+.rv.in .w>span{transform:none}
+.magnetic{transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+@media (prefers-reduced-motion:reduce){.rv .w>span{transform:none!important;transition:none}.tilt,.magnetic{transition:none}}
+
 @media (prefers-reduced-motion:reduce){.cosmos-h1{animation:none}.live{animation:none}}
 
 @media (prefers-reduced-motion:reduce){.wordmark .outline::after{animation:none}}
@@ -755,6 +767,48 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
     l.addEventListener('click',t);l.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t()}})});
   send.addEventListener('click',function(){var on=upd();if(!on.length)return;var txt='Здравствуйте! Хотим обсудить рекламу. Интересуют каналы: '+on.join(', ')+'.';
     try{navigator.clipboard.writeText(txt).then(function(){note.textContent='Подборка скопирована — вставьте её в чат'},function(){note.textContent='Напишите нам в Telegram: '+on.join(', ')})}catch(e){note.textContent='Напишите нам в Telegram: '+on.join(', ')}});
+})();
+</script>
+<script>
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var fine=window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  /* 1. Word-by-word reveal of section headlines (only for those below the first screen) */
+  var heads=document.querySelectorAll('.sec-head h2,.about-lead,.world-big,.anyad-head h3,.flag h2,.cta-run+.contacts p');
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.25});
+  heads.forEach(function(h){
+    if(h.getBoundingClientRect().top<innerHeight)return;
+    var i=0;(function walk(n){[].slice.call(n.childNodes).forEach(function(c){
+      if(c.nodeType===3){var parts=c.textContent.split(/(\s+)/),f=document.createDocumentFragment();
+        parts.forEach(function(w){if(!w)return;if(/^\s+$/.test(w)){f.appendChild(document.createTextNode(w));return}
+          var o=document.createElement('span');o.className='w';var inn=document.createElement('span');inn.textContent=w;inn.style.setProperty('--i',i++);o.appendChild(inn);f.appendChild(o)});
+        n.replaceChild(f,c)}else if(c.nodeType===1&&c.tagName!=='SVG'&&c.tagName!=='BR'){walk(c)}})})(h);
+    h.classList.add('rv');io.observe(h)});
+  /* 2. Count-up numbers (start when reached, also if the page jumped past them) */
+  var pend=[];
+  function run(el){var m=el.dataset.m.split('|'),to=+m[1],t0=performance.now();
+    (function step(t){var k=Math.min(1,(t-t0)/1400),v=Math.round(to*(1-Math.pow(1-k,4)));el.firstChild.textContent=m[0]+v+m[2];if(k<1)requestAnimationFrame(step)})(t0)}
+  function check(){pend=pend.filter(function(el){if(el.getBoundingClientRect().top<innerHeight*0.9){run(el);return false}return true})}
+  [].slice.call(document.querySelectorAll('.stat b,.gcard b,.adv-num')).forEach(function(el){var tn=el.firstChild;if(!tn||tn.nodeType!==3)return;var mm=tn.textContent.match(/^(\D*)(\d+)(\D*)$/);if(!mm)return;
+    if(el.getBoundingClientRect().top<innerHeight)return;el.dataset.m=mm[1]+'|'+mm[2]+'|'+mm[3];tn.textContent=mm[1]+'0'+mm[3];pend.push(el)});
+  addEventListener('scroll',check,{passive:true});
+  /* 3. Marquees react to scroll speed and direction */
+  var tracks=[].slice.call(document.querySelectorAll('.marquee-track')).map(function(t){return t.getAnimations?t.getAnimations()[0]:null}).filter(Boolean);
+  var lastY=scrollY,vel=0,rate=1;
+  addEventListener('scroll',function(){var d=scrollY-lastY;lastY=scrollY;vel=Math.max(-60,Math.min(60,d))},{passive:true});
+  (function loop(){vel*=0.9;var target=(vel<-1?-1:1)*(1+Math.abs(vel)/8);rate+=(target-rate)*0.08;tracks.forEach(function(a){a.playbackRate=rate});requestAnimationFrame(loop)})();
+  if(!fine)return;
+  /* 4. Spotlight + 3D tilt on cards (desktop) */
+  document.querySelectorAll('.gcard,.step,.person,.case-feature,.kpis div,.adv-item').forEach(function(el){el.classList.add('fx')});
+  document.querySelectorAll('.gcard,.step,.person:not(.lead),.case-feature').forEach(function(el){el.classList.add('tilt');
+    el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+      el.style.transform='perspective(900px) rotateX('+((.5-y)*7)+'deg) rotateY('+((x-.5)*9)+'deg) translateY(-4px)'});
+    el.addEventListener('pointerleave',function(){el.style.transform=''})});
+  document.addEventListener('pointermove',function(e){var el=e.target.closest&&e.target.closest('.fx');if(!el)return;var r=el.getBoundingClientRect();el.style.setProperty('--sx',e.clientX-r.left+'px');el.style.setProperty('--sy',e.clientY-r.top+'px')});
+  /* 5. Magnetic buttons */
+  document.querySelectorAll('.btn--solid,.btn--white,.btn--glass').forEach(function(b){b.classList.add('magnetic');
+    b.addEventListener('pointermove',function(e){var r=b.getBoundingClientRect();b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.25)+'px,'+((e.clientY-r.top-r.height/2)*.35)+'px)'});
+    b.addEventListener('pointerleave',function(){b.style.transform=''})});
 })();
 </script>
 <script>
