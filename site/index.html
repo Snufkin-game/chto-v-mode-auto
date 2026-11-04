@@ -354,20 +354,20 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .no1-facts span{font-size:12px;color:var(--ink-soft)}
 @media (max-width:760px){.no1-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.no1-facts b{font-size:20px}.no1-facts span{font-size:11px}.no1-band{grid-template-columns:1fr;gap:8px}}
 @media (prefers-reduced-motion:reduce){.no1-ring,.no1-dot{animation:none}}
-.no1-badge{position:relative;width:clamp(260px,28vw,380px);aspect-ratio:1;max-width:100%;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.no1-badge{position:relative;container-type:inline-size;width:clamp(260px,28vw,380px);aspect-ratio:1;max-width:100%;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
 .no1-ring{position:absolute;inset:0;width:100%;height:100%;animation:spin 26s linear infinite;overflow:visible}
 .no1-ring text{font-family:var(--f-mono);font-size:12.5px;letter-spacing:.32em;fill:#9DB0FF}
 @keyframes spin{to{transform:rotate(360deg)}}
-.no1-core{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
-.no1-sign{font-family:var(--f-mono);font-size:clamp(14px,1.3vw,18px);color:#9DB0FF;align-self:flex-start;margin-top:31%;margin-right:4px;letter-spacing:.1em}
-.no1-one{font-family:var(--f-serif);font-style:italic;font-weight:500;font-size:clamp(230px,24vw,330px);line-height:.8;color:#fff;text-shadow:0 0 40px rgba(51,82,255,.55),0 0 90px rgba(51,82,255,.35);margin-top:6%}
+.no1-core{position:absolute;inset:0;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.no1-sign{position:absolute;left:29%;top:30%;font-family:var(--f-mono);font-size:max(12px,4.6cqw);color:#9DB0FF;letter-spacing:.1em}
+.no1-one{position:absolute;left:50%;top:50%;transform:translate(-48.5%,-50%);font-family:var(--f-serif);font-style:italic;font-weight:500;font-size:74cqw;line-height:1;font-variant-numeric:lining-nums;font-feature-settings:"lnum" 1;color:#fff;text-shadow:0 0 40px rgba(51,82,255,.55),0 0 90px rgba(51,82,255,.35)}
 .no1-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 0 6px rgba(51,82,255,.35),0 0 24px #3352FF;top:50%;left:50%;margin:-5px;offset-path:circle(46.7% at 50% 50%);animation:orbit 9s linear infinite}
 @keyframes orbit{to{offset-distance:100%}}
 @supports not (offset-path:circle(10px)){.no1-dot{display:none}}
-.no1-h .serif.loud{position:relative;display:inline-block;font-size:2.1em;font-weight:600;color:#9DB0FF;-webkit-text-fill-color:#9DB0FF;text-shadow:0 0 30px rgba(51,82,255,.6);padding:0 .06em;line-height:.9}
+.no1-h .serif.loud{position:relative;display:inline-block;font-size:1.6em;font-weight:600;color:#9DB0FF;-webkit-text-fill-color:#9DB0FF;text-shadow:0 0 30px rgba(51,82,255,.6);padding:0 .06em;line-height:.9}
 .no1-h .loud svg{position:absolute;left:-2%;bottom:-.12em;width:104%;height:.32em;overflow:visible}
 .no1-h .loud path{fill:none;stroke:#6F88FF;stroke-width:4;stroke-linecap:round}
-@media (max-width:760px){.no1-badge{width:min(72vw,280px);justify-self:center;margin-bottom:8px}.no1-one{font-size:230px}}
+@media (max-width:760px){.no1-badge{width:min(72vw,280px);justify-self:center;margin-bottom:8px}}
 @media (prefers-reduced-motion:reduce){.no1-ring,.no1-dot{animation:none}}
 
 /* Serif accents: larger, heavier, never split across lines */
@@ -510,7 +510,7 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
       <div class="no1-badge" id="no1Badge" aria-hidden="true">
         <svg class="no1-ring" viewBox="0 0 300 300"><defs><path id="no1c" d="M150,150 m-118,0 a118,118 0 1,1 236,0 a118,118 0 1,1 -236,0"/></defs>
           <circle cx="150" cy="150" r="140" fill="none" stroke="rgba(157,176,255,.35)" stroke-width="1"/>
-          <circle cx="150" cy="150" r="96" fill="none" stroke="rgba(157,176,255,.25)" stroke-width="1"/>
+          <circle cx="150" cy="150" r="104" fill="none" stroke="rgba(157,176,255,.25)" stroke-width="1"/>
           <text><textPath href="#no1c" startOffset="0">НОМЕР ОДИН · ЗАКУПКА РЕКЛАМЫ · RANGEMEDIA · НОМЕР ОДИН · ЗАКУПКА РЕКЛАМЫ · RANGEMEDIA ·</textPath></text>
         </svg>
         <div class="no1-core"><span class="no1-sign">№</span><span class="no1-one">1</span></div>
