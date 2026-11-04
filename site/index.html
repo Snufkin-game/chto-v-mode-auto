@@ -54,11 +54,15 @@ p{margin:0}
 .hdr .wrap{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-block:14px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;letter-spacing:.02em;font-size:18px}
 .logo b{font-weight:700}.logo span{font-weight:300}
-.logo-mark{width:auto;height:30px;flex:none}
-.hdr .wrap{display:grid;grid-template-columns:1fr auto 1fr;padding-block:10px}
-.logo{grid-column:2;grid-row:1;flex-direction:column;gap:6px;font-size:13px}
-.nav{grid-column:1;grid-row:1;justify-self:start}
-.hdr .btn{grid-column:3;grid-row:1;justify-self:end}
+.logo-mark{width:auto;height:23px;flex:none}
+.hdr .logo{font-size:20px;gap:16px}
+@media (max-width:420px){.hdr .logo{font-size:15px;gap:10px}.hdr .logo-mark{height:18px}}
+.cosmos-h1 .key{position:relative;display:inline-block;white-space:nowrap;font-size:1.06em;color:#fff;-webkit-text-fill-color:#fff;padding-right:.08em}
+.cosmos-h1 .key svg{position:absolute;left:-3%;bottom:-.16em;width:106%;height:.36em;overflow:visible}
+.cosmos-h1 .key path{fill:none;stroke:#6F88FF;stroke-width:3.2;stroke-linecap:round;stroke-dasharray:240;stroke-dashoffset:0;animation:keydraw 1.4s .6s cubic-bezier(.6,0,.2,1) both}
+.cosmos-h1 .key .arr2{font-family:var(--f-display);font-style:normal;font-size:.5em;vertical-align:.9em;margin-left:.12em;color:#6F88FF;-webkit-text-fill-color:#6F88FF}
+@keyframes keydraw{from{stroke-dashoffset:240}to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.cosmos-h1 .key path{animation:none}}
 .logo-word{letter-spacing:.16em;font-weight:500}.logo-word b{font-weight:500}.logo-word i{font-style:normal;font-weight:300;color:var(--cobalt)}
 .nav{display:flex;gap:28px}
 .nav a{text-decoration:none;font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);transition:color .2s}
@@ -376,7 +380,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       </div>
 
       <div class="cosmos-row">
-        <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="glass-pill">под ключ</span></h1>
+        <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<span class="arr2" aria-hidden="true">↗</span><svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h1>
         <div class="cosmos-side">
           <p class="rot" aria-live="polite">Запускаем <span class="slot" id="slotA">ТВ-рекламу</span><br><span class="slot" id="slotB">в Европе</span></p>
           <div class="hero-cta">
