@@ -337,6 +337,14 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .lm-note{margin-top:6px;color:var(--ink-soft);font-size:11px}
 @media (max-width:600px){.lm-head{align-items:center}.lm-btn{width:40px;height:40px}.lm-scroller{grid-auto-columns:72%}}
 
+/* №1 lead */
+.lead1{display:flex;align-items:center;gap:clamp(14px,2vw,28px);margin-top:clamp(4px,1.5vw,16px);font-weight:500}
+.no1{font-size:clamp(96px,15vw,232px);font-weight:600;letter-spacing:-.07em;line-height:.8;background:linear-gradient(160deg,#fff 20%,#9DB0FF 55%,#3352FF 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.04em}
+.l1t{font-size:clamp(30px,4.8vw,76px);line-height:.95;letter-spacing:-.04em;text-transform:uppercase;color:#fff}
+.cosmos-sub{font-size:clamp(18px,2.2vw,30px)!important;line-height:1.15!important;max-width:none!important;margin-top:4px}
+.svc-main h3::after{content:"№1";font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;vertical-align:top;margin-left:10px;padding:4px 8px;border-radius:999px;background:#fff;color:var(--paper);position:relative;top:.6em}
+.svc-main h3{color:#9DB0FF}
+
 /* Serif accents: larger, heavier, never split across lines */
 h2 .serif,h3 .serif,.cosmos-h1 .serif,.about-lead em{font-weight:600;white-space:nowrap;letter-spacing:-.015em}
 h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
@@ -445,7 +453,8 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
         <span>Москва <b id="clock">--:--</b> UTC+3</span>
       </div>
 
-      <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h1>
+      <h1 class="lead1"><span class="no1">№1</span><span class="l1t">по закупке<br>рекламы</span></h1>
+      <p class="cosmos-h1 cosmos-sub">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></p>
 
       <div class="pwm-wrap">
         <canvas id="pwm" role="img" aria-label="RangeMedia"></canvas>
@@ -528,6 +537,7 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
         <h2>Что мы <span class="serif">делаем</span></h2>
       </div>
       <div class="svc">
+        <div class="svc-row svc-main"><span class="mono">[ Media buying ]</span><h3>Закупка рекламы</h3><p>Наша главная экспертиза. Закупаем рекламу у блогеров, в Telegram, на ТВ, в наружке и digital напрямую, без лишних наценок. Отчёт по каждому размещению.</p></div>
         <div class="svc-row"><span class="mono">[ Influence ]</span><h3>Блогеры</h3><p>Закупка интеграций у авторов любого масштаба — от микроблогеров до миллионников. Подбор, переговоры, контроль выхода, отчёт по каждому посту.</p></div>
         <div class="svc-row"><span class="mono">[ TV ]</span><h3>ТВ-реклама</h3><p>Ролики на федеральных, региональных и тематических каналах, спонсорство программ, product placement. Медиаплан, производство ролика и закупка эфира.</p></div>
         <div class="svc-row"><span class="mono">[ OOH ]</span><h3>Наружка</h3><p>Билборды, суперсайты, цифровые экраны, транспорт, метро, аэропорты и indoor — в России и за рубежом.</p></div>
