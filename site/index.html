@@ -288,7 +288,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .gcard:hover{border-color:rgba(157,176,255,.6);transform:translateY(-3px)}
 .gcard b{font-size:clamp(20px,2vw,28px);font-weight:500;letter-spacing:-.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gcard span{font-size:13px;color:rgba(238,242,255,.6)}
-@media (max-width:900px){.cosmos-row{grid-template-columns:1fr}.cosmos-cards{grid-template-columns:repeat(2,1fr)}.hide-s{display:none}}
+@media (max-width:900px){.cosmos-cards{grid-template-columns:repeat(2,1fr)}.hide-s{display:none}}
+.cosmos-row{grid-template-columns:1fr}
+.cosmos-side{flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px 32px}
+.cosmos-h1{max-width:22ch;margin-top:clamp(4px,1.5vw,16px)}
 /* header over the cosmos */
 :root:not(.past-cosmos) .hdr{background:rgba(4,8,23,.9);border-bottom-color:rgba(255,255,255,.1)}
 :root:not(.past-cosmos) .hdr .logo,:root:not(.past-cosmos) .hdr .nav a{color:#EEF2FF}
@@ -371,10 +374,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
     <div class="cosmos-glow" aria-hidden="true"></div>
     <div class="wrap cosmos-inner">
       <div class="cosmos-top mono">
-        <span><i class="live"></i>Принимаем проекты на 2026</span>
+        <span><i class="live"></i>Старт за 3–7 дней</span>
         <span class="hide-s">Россия → Европа · LATAM · Африка · Азия · MENA</span>
         <span>Москва <b id="clock">--:--</b> UTC+3</span>
       </div>
+
+      <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h1>
 
       <div class="pwm-wrap">
         <canvas id="pwm" role="img" aria-label="RangeMedia"></canvas>
@@ -382,7 +387,6 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       </div>
 
       <div class="cosmos-row">
-        <h1 class="cosmos-h1">Маркетинговое рекламное агентство <span class="serif">полного цикла</span> <span class="serif key">под ключ<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h1>
         <div class="cosmos-side">
           <p class="rot" aria-live="polite">Запускаем <span class="slot" id="slotA">ТВ-рекламу</span><br><span class="slot" id="slotB">в Европе</span></p>
           <div class="hero-cta">
