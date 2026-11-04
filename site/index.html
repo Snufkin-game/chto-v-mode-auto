@@ -222,18 +222,18 @@ tbody tr:hover{background:var(--paper-2)}
 .cta{background:var(--cobalt);color:#fff;overflow:hidden;position:relative}
 .cta-bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .cta>*:not(.cta-bg){position:relative}
-.cta-run{display:block;white-space:nowrap;text-decoration:none;padding-block:clamp(32px,5vw,64px);border-bottom:1px solid rgba(255,255,255,.25)}
+.cta-run{display:block;white-space:nowrap;text-decoration:none;padding-block:clamp(20px,4vw,48px);border-bottom:1px solid rgba(255,255,255,.25)}
 .cta-run .marquee-track{animation-duration:24s}
-.cta-run .marquee-track span{font-size:clamp(56px,10vw,160px);letter-spacing:-.05em;font-weight:500}
+.cta-run .marquee-track span{font-size:clamp(40px,8vw,120px);letter-spacing:-.05em;font-weight:500}
 .cta-run .marquee-track span::after{background:#fff;width:.18em;height:.18em}
 .cta-run:hover .marquee-track{animation-play-state:paused}
-.contacts{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:32px;padding-block:48px}
-.contacts .mono{color:rgba(255,255,255,.65);display:block;margin-bottom:10px}
-.contacts a{text-decoration:none;font-size:clamp(17px,1.5vw,21px);display:inline-block;border-bottom:1px solid rgba(255,255,255,.35);transition:border-color .2s}
+.contacts{display:grid;grid-template-columns:1.3fr repeat(4,auto);justify-content:space-between;gap:20px 40px;padding-block:36px 40px;align-items:end}
+.contacts .mono{color:rgba(255,255,255,.65);display:block;margin-bottom:6px;font-size:11px}
+.contacts a{text-decoration:none;font-size:clamp(15px,1.3vw,18px);display:inline-block;border-bottom:1px solid rgba(255,255,255,.35);transition:border-color .2s}
 .contacts a:hover{border-color:#fff}
-.contacts p{font-size:clamp(20px,2vw,28px);line-height:1.2;letter-spacing:-.02em;max-width:18ch}
-@media (max-width:900px){.contacts{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.contacts{grid-template-columns:1fr}}
+.contacts p{font-size:clamp(18px,1.8vw,24px);line-height:1.2;letter-spacing:-.02em;max-width:20ch}
+@media (max-width:900px){.contacts{grid-template-columns:1fr 1fr;justify-content:stretch}.contacts>div:first-child{grid-column:1/-1}}
+@media (max-width:520px){.contacts{gap:18px 16px;padding-block:28px 32px}.contacts a{font-size:15px}}
 
 footer{background:var(--navy);color:var(--on-dark-soft)}
 footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:22px}
@@ -321,16 +321,25 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 @media (max-width:900px){.world{grid-template-columns:1fr}.world-globe{min-height:360px;order:-1}}
 
 /* Any ad */
-.anyad{margin-top:48px;display:grid;grid-template-columns:1fr 1.3fr;gap:clamp(24px,4vw,64px);background:var(--paper-2);border-radius:24px;padding:clamp(24px,4vw,56px)}
+.anyad{margin-top:48px;display:grid;row-gap:28px;grid-template-columns:1fr 1.3fr;gap:clamp(24px,4vw,64px);background:var(--paper-2);border-radius:24px;padding:clamp(24px,4vw,56px)}
 .anyad-head{display:flex;flex-direction:column;gap:16px;min-width:0}
 .anyad-head .mono{color:var(--ink-soft)}
 .anyad-head h3{font-size:clamp(30px,3.8vw,56px);line-height:1;letter-spacing:-.035em;text-transform:uppercase;font-weight:500}
 .anyad-head h3 .serif{color:var(--cobalt)}
 .anyad-head p{color:var(--ink-soft);max-width:40ch}
 .cloud{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
-.cloud li{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:10px 18px;font-size:16px;transition:background .2s,color .2s,transform .2s,border-color .2s;cursor:default}
+.cloud li{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:10px 18px;font-size:16px;transition:background .2s,color .2s,transform .2s,border-color .2s;cursor:pointer;user-select:none}
+.cloud li.on,.cloud li.hot.on{background:var(--cobalt);border-color:var(--cobalt);color:#fff;transform:translateY(-3px)}
+@media (max-width:520px){.cloud{gap:8px}.cloud li{font-size:14px;padding:8px 14px}}
+.cloud li.on::before{content:"✓ ";font-weight:600}
+.mix{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:20px;margin-top:4px}
+.mix-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mix-text b{font-size:20px;font-weight:500;letter-spacing:-.01em}
+.mix-text span{color:var(--ink-soft);font-size:14px}
+.mix .btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.mix-note{font-size:13px;color:#5CF0A6;min-height:1em}
 .cloud li.hot{border-color:var(--cobalt);color:var(--cobalt);font-weight:500}
-.cloud li:hover{background:var(--cobalt);border-color:var(--cobalt);color:#fff;transform:translateY(-3px) rotate(-1.5deg)}
+@media (hover:hover){.cloud li:hover{border-color:var(--cobalt);transform:translateY(-3px) rotate(-1.5deg)}}
 @media (max-width:860px){.anyad{grid-template-columns:1fr}}
 
 /* Advantage: postpay */
@@ -431,7 +440,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
       <div class="stat" role="listitem"><b>6</b><span>регионов: Россия, Европа, LATAM, Африка, Азия, MENA</span></div>
       <div class="stat" role="listitem"><b>3–7</b><span>дней от брифа до запуска кампании</span></div>
       <div class="stat" role="listitem"><b>24 ч</b><span>на ответ и первичный медиаплан</span></div>
-      <div class="stat" role="listitem"><b style="white-space:nowrap">$5K–500K</b><span>диапазон бюджетов, с которыми работаем</span></div>
+      <div class="stat" role="listitem"><b>∞</b><span>бюджет без ограничений — от теста до федеральной кампании</span></div>
     </div>
   </div>
 
@@ -476,11 +485,18 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
         <div class="anyad-head">
           <span class="mono">Все виды рекламы</span>
           <h3>Нет такой рекламы, которую мы <span class="serif">не&nbsp;можем</span> сделать</h3>
-          <p>Онлайн и офлайн, локально и в нескольких странах сразу. Соберём медиамикс под задачу и бюджет.</p>
+          <p>Онлайн и офлайн, локально и в нескольких странах сразу. Отметьте каналы, которые вам интересны, и отправьте подборку — вернёмся с медиапланом.</p>
         </div>
         <ul class="cloud">
           <li class="hot">ТВ</li><li>Радио</li><li class="hot">Билборды</li><li>Цифровые экраны</li><li>Транспорт и метро</li><li>Аэропорты</li><li>Indoor</li><li class="hot">Блогеры</li><li>Посевы в Telegram</li><li>Telegram Ads</li><li>Таргет</li><li>Контекст</li><li>Programmatic</li><li>CPA и лидген</li><li>SEO</li><li class="hot">СМИ и PR</li><li>Нативные спецпроекты</li><li class="hot">Спонсорство</li><li>Ивенты</li><li>Промоакции</li><li>Product placement</li><li>Подкасты</li><li>Маркетплейсы</li><li>POS-материалы</li><li class="hot">AI-аватары</li>
         </ul>
+        <div class="mix">
+          <div class="mix-text"><b id="mixCount">Отметьте нужные каналы</b><span id="mixList">Соберём медиамикс и посчитаем бюджет под вашу задачу</span></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <a class="btn btn--solid" id="mixSend" href="https://t.me/RM_RangeMedia" target="_blank" rel="noopener" aria-disabled="true">Отправить подборку <span class="arr">→</span></a>
+            <span class="mix-note" id="mixNote" aria-live="polite"></span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -638,7 +654,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   </a>
   <div class="wrap contacts">
     <div><span class="mono">Новый проект</span><p>Пришлите бриф — ответим в течение 24 часов.</p></div>
-    <div><span class="mono">Telegram</span><a href="https://t.me/RM_RangeMedia" target="_blank" rel="noopener">@RM_RangeMedia</a><br><br><span class="mono">Канал</span><a href="https://t.me/RangeMedia" target="_blank" rel="noopener">t.me/RangeMedia</a></div>
+    <div><span class="mono">Telegram</span><a href="https://t.me/RM_RangeMedia" target="_blank" rel="noopener">@RM_RangeMedia</a></div>
+    <div><span class="mono">Канал</span><a href="https://t.me/RangeMedia" target="_blank" rel="noopener">t.me/RangeMedia</a></div>
     <div><span class="mono">Телефон</span><a href="tel:+79919266325">+7 991 926-63-25</a></div>
     <div><span class="mono">Почта</span><a href="mailto:RangeMedia@yandex.ru">RangeMedia@yandex.ru</a></div>
   </div>
@@ -723,6 +740,21 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){build(false);if(reduce){pDraw(0)}});
   var rs;window.addEventListener('resize',function(){clearTimeout(rs);rs=setTimeout(function(){sSize();P=[];build(false);if(reduce){sDraw(0);pDraw(0)}},150)});
   if(reduce){for(var i=0;i<P.length;i++){P[i].x=P[i].tx;P[i].y=P[i].ty}sDraw(0);pDraw(0)}else requestAnimationFrame(frame);
+})();
+</script>
+<script>
+(function(){
+  var lis=[].slice.call(document.querySelectorAll('.cloud li')),cnt=document.getElementById('mixCount'),lst=document.getElementById('mixList'),send=document.getElementById('mixSend'),note=document.getElementById('mixNote');
+  function word(n){var a=n%10,b=n%100;return (a==1&&b!=11)?'канал':(a>=2&&a<=4&&(b<10||b>=20))?'канала':'каналов'}
+  function upd(){var on=lis.filter(function(l){return l.classList.contains('on')}).map(function(l){return l.textContent});
+    if(on.length){cnt.textContent='Выбрано: '+on.length+' '+word(on.length);lst.textContent=on.join(' · ');send.setAttribute('aria-disabled','false')}
+    else{cnt.textContent='Отметьте нужные каналы';lst.textContent='Соберём медиамикс и посчитаем бюджет под вашу задачу';send.setAttribute('aria-disabled','true')}
+    note.textContent='';return on}
+  lis.forEach(function(l){l.setAttribute('role','button');l.setAttribute('tabindex','0');l.setAttribute('aria-pressed','false');
+    function t(){l.classList.toggle('on');l.setAttribute('aria-pressed',l.classList.contains('on'));upd()}
+    l.addEventListener('click',t);l.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();t()}})});
+  send.addEventListener('click',function(){var on=upd();if(!on.length)return;var txt='Здравствуйте! Хотим обсудить рекламу. Интересуют каналы: '+on.join(', ')+'.';
+    try{navigator.clipboard.writeText(txt).then(function(){note.textContent='Подборка скопирована — вставьте её в чат'},function(){note.textContent='Напишите нам в Telegram: '+on.join(', ')})}catch(e){note.textContent='Напишите нам в Telegram: '+on.join(', ')}});
 })();
 </script>
 <script>
