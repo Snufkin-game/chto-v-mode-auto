@@ -1041,7 +1041,6 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
   if(flag){cycle([].slice.call(flag.querySelectorAll('li')),'on',1800,flag);
     var glow=flag.querySelector('.flag-glow');
     if(glow&&!red)flag.addEventListener('pointermove',function(e){var r=flag.getBoundingClientRect();glow.style.left=(e.clientX-r.left-310)+'px';glow.style.top=(e.clientY-r.top-310)+'px';glow.style.right='auto'});}
-  var pl=document.querySelector('.platforms');if(pl)cycle([].slice.call(pl.querySelectorAll('.tag')),'lit',1100,pl);
 })();
 </script>
 <script>
