@@ -219,7 +219,18 @@ tbody tr:hover{background:var(--paper-2)}
 .person .role{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-top:6px}
 .person p{font-size:14px;color:var(--ink-soft);margin-top:auto;padding-top:18px}
 .person.net{background:var(--paper-2);border-style:dashed}
-.person.net .big{font-size:clamp(56px,6vw,84px);letter-spacing:-.05em;line-height:.9;color:var(--cobalt);font-weight:500}
+.person.net .big{display:none}
+.team{align-items:stretch!important}
+.person.lead{align-self:start}
+.mono-avatar.ghost{background:radial-gradient(70% 70% at 50% 35%,rgba(51,82,255,.35),rgba(10,17,42,1) 75%)}
+.ghost-svg{position:absolute;inset:0;width:100%;height:100%}
+.ghost-svg .g-main{animation:ghostpulse 3.2s ease-in-out infinite}
+.ghost-svg .g-back{animation:ghostfade 3.2s ease-in-out infinite}
+@keyframes ghostpulse{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes ghostfade{0%,100%{opacity:.9}50%{opacity:.35}}
+.person.net:hover .ghost-svg .g-main{opacity:1;animation:none}
+.mono-avatar.ghost small{z-index:1;color:#fff;opacity:.85}
+@media (prefers-reduced-motion:reduce){.ghost-svg g{animation:none}}
 @media (max-width:1000px){.team{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:520px){.team{grid-template-columns:1fr}.person{min-height:0}.person.lead{transform:none}}
 
@@ -826,8 +837,21 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
           <p>Digital-стратег по маркетингу, performance-маркетолог, креатор-сценарист, AI-специалист, архитектор процессов и систем.</p>
         </article>
         <article class="person net">
-          <div class="big">∞</div>
-          <h3 style="margin-top:18px">Сеть исполнителей</h3>
+          <div class="mono-avatar ghost" aria-hidden="true">
+            <svg viewBox="0 0 200 200" class="ghost-svg">
+              <defs><filter id="gglow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+              <g class="g-back" fill="none" stroke="rgba(157,176,255,.35)" stroke-width="1.6" stroke-dasharray="4 6">
+                <circle cx="52" cy="92" r="17"/><path d="M18 200 C 20 150, 34 128, 52 128 C 70 128, 84 150, 86 200"/>
+                <circle cx="148" cy="92" r="17"/><path d="M114 200 C 116 150, 130 128, 148 128 C 166 128, 180 150, 182 200"/>
+              </g>
+              <g class="g-main" filter="url(#gglow)" fill="none" stroke="#EEF2FF" stroke-width="2.4" stroke-linecap="round">
+                <circle cx="100" cy="74" r="27"/>
+                <path d="M44 200 C 46 140, 70 116, 100 116 C 130 116, 154 140, 156 200"/>
+              </g>
+            </svg>
+            <small>Network</small>
+          </div>
+          <h3>Сеть исполнителей</h3>
           <div class="role">Под задачу любого масштаба</div>
           <p>Продюсеры, креаторы, монтажёры, дизайнеры, переводчики и промоутеры. Собираем команду под проект за дни.</p>
         </article>
