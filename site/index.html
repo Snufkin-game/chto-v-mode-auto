@@ -329,7 +329,23 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .lm-scroller::-webkit-scrollbar{display:none}
 .lm-scroller.drag{cursor:grabbing;scroll-snap-type:none}
 .lm-card{scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:28px 20px 24px;border-radius:24px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(51,82,255,.10),rgba(255,255,255,.02));text-decoration:none;color:var(--ink);transition:border-color .3s,transform .3s;user-select:none}
-.lm-card:hover{border-color:#7F96FF;transform:translateY(-4px)}
+.lm-card:hover,.lm-card.focus{border-color:#7F96FF;transform:translateY(-6px);background:linear-gradient(180deg,rgba(51,82,255,.24),rgba(255,255,255,.03));box-shadow:0 20px 50px -20px rgba(51,82,255,.6)}
+.lm-av{transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s}
+.lm-card:hover .lm-av,.lm-card.focus .lm-av{transform:scale(1.07);box-shadow:0 0 0 6px rgba(51,82,255,.18),0 0 40px rgba(110,135,255,.75);animation:ringspin 4s linear infinite}
+@keyframes ringspin{to{filter:hue-rotate(0deg)}}
+.lm-card:hover .lm-subs,.lm-card.focus .lm-subs{color:#9DB0FF}
+.lm-subs{transition:color .3s}
+.trust{position:relative;display:inline-block;font-family:var(--f-serif);font-style:italic;font-weight:600;font-size:1.22em;color:#9DB0FF;letter-spacing:-.01em;line-height:.9}
+.trust svg{position:absolute;left:-2%;bottom:-.14em;width:104%;height:.3em;overflow:visible}
+.trust path{fill:none;stroke:#6F88FF;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:240;stroke-dashoffset:240;transition:stroke-dashoffset 1.3s cubic-bezier(.6,0,.2,1) .2s}
+.trust.in path{stroke-dashoffset:0}
+.pt{position:relative;overflow:hidden;isolation:isolate}
+.pt::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .3s;background:radial-gradient(160px circle at var(--sx,50%) var(--sy,50%),rgba(110,135,255,.35),transparent 70%)}
+.pt:hover::before,.pt.lit::before{opacity:1}
+.pt.lit{color:var(--ink);border-color:#7F96FF}
+.bar{display:block;height:3px;border-radius:2px;margin-top:6px;margin-left:auto;background:linear-gradient(90deg,#3352FF,#9DB0FF);width:0;transition:width 1.2s cubic-bezier(.2,.7,.2,1)}
+.tbl-wrap.in .bar{width:var(--w)}
+tbody tr:hover td.name{color:#9DB0FF}
 .lm-av{width:112px;height:112px;border-radius:50%;padding:3px;margin-bottom:12px;background:conic-gradient(from 210deg,#3352FF,#9DB0FF,#3352FF)}
 .lm-av.ig{background:conic-gradient(from 210deg,#F58529,#DD2A7B,#8134AF,#515BD4,#F58529)}
 .lm-av img,.lm-ini{width:100%;height:100%;border-radius:50%;object-fit:cover;display:grid;place-items:center;border:3px solid var(--paper);background:var(--paper-2);pointer-events:none}
@@ -687,7 +703,7 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
       </div>
 
       <div class="partners">
-        <h3 class="sub-h">Лидеры рынка <span class="dim">доверяют нам</span></h3>
+        <h3 class="sub-h">Лидеры рынка <span class="trust">доверяют нам<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M3 15 C 45 5, 120 2, 197 9"/></svg></span></h3>
         <div class="pt-grid">
           <span class="pt pt-b">СБЕР</span>
           <span class="pt pt-b">МТС</span>
@@ -733,13 +749,13 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
         <table>
           <thead><tr><th>Автор</th><th>Формат и ниша</th><th>Рынок</th><th class="num">YouTube</th><th class="num">Соцсети</th></tr></thead>
           <tbody>
-            <tr><td class="name">adarshuc<small>YouTuber</small></td><td>Omegle-шоу, юмор, флирт</td><td>Индия</td><td class="num">3.6M+</td><td class="num">2.9M</td></tr>
-            <tr><td class="name">Youssef Joe<small>YouTuber</small></td><td>Скетчи, сторителлинг</td><td>Египет</td><td class="num">4.3M+</td><td class="num">185K+</td></tr>
-            <tr><td class="name">Classified YT<small>Долгосрочное партнёрство</small></td><td>Гейминг: Free Fire, BGMI</td><td>Индия</td><td class="num">2.5M+</td><td class="num">269K+</td></tr>
-            <tr><td class="name">Maher Mahran<small>YouTuber</small></td><td>Юмор, реакции, роустинг</td><td>Арабоязычный</td><td class="num">1.44M+</td><td class="num">434K+</td></tr>
-            <tr><td class="name">VyukSUCKatANIME<small>YouTuber</small></td><td>Аниме-скетчи, Shorts</td><td>Индия</td><td class="num">950K+</td><td class="num">425K+</td></tr>
-            <tr><td class="name">Rk Movies<small>YouTuber</small></td><td>Драма, love story, хоррор</td><td>Global</td><td class="num">507K+</td><td class="num">~50K</td></tr>
-            <tr><td class="name">Brvce<small>YouTuber</small></td><td>Лайфстайл, влоги, челленджи</td><td>ЮАР</td><td class="num">138K+</td><td class="num">134K+</td></tr>
+            <tr><td class="name">adarshuc<small>YouTuber</small></td><td>Omegle-шоу, юмор, флирт</td><td>Индия</td><td class="num">3.6M+<span class="bar" style="--w:84%"></span></td><td class="num">2.9M</td></tr>
+            <tr><td class="name">Youssef Joe<small>YouTuber</small></td><td>Скетчи, сторителлинг</td><td>Египет</td><td class="num">4.3M+<span class="bar" style="--w:100%"></span></td><td class="num">185K+</td></tr>
+            <tr><td class="name">Classified YT<small>Долгосрочное партнёрство</small></td><td>Гейминг: Free Fire, BGMI</td><td>Индия</td><td class="num">2.5M+<span class="bar" style="--w:58%"></span></td><td class="num">269K+</td></tr>
+            <tr><td class="name">Maher Mahran<small>YouTuber</small></td><td>Юмор, реакции, роустинг</td><td>Арабоязычный</td><td class="num">1.44M+<span class="bar" style="--w:33%"></span></td><td class="num">434K+</td></tr>
+            <tr><td class="name">VyukSUCKatANIME<small>YouTuber</small></td><td>Аниме-скетчи, Shorts</td><td>Индия</td><td class="num">950K+<span class="bar" style="--w:22%"></span></td><td class="num">425K+</td></tr>
+            <tr><td class="name">Rk Movies<small>YouTuber</small></td><td>Драма, love story, хоррор</td><td>Global</td><td class="num">507K+<span class="bar" style="--w:12%"></span></td><td class="num">~50K</td></tr>
+            <tr><td class="name">Brvce<small>YouTuber</small></td><td>Лайфстайл, влоги, челленджи</td><td>ЮАР</td><td class="num">138K+<span class="bar" style="--w:4%"></span></td><td class="num">134K+</td></tr>
             <tr><td class="name">Lakshay Kaushik<small>Digital creator</small></td><td>Лайфстайл, мода, юмор</td><td>Индия</td><td class="num">—</td><td class="num">550K+</td></tr>
           </tbody>
         </table>
@@ -971,6 +987,29 @@ h2 .serif,h3 .serif,.about-lead em{color:#7F96FF}
   addEventListener('scroll',function(){v=Math.max(-80,Math.min(80,scrollY-last));last=scrollY},{passive:true});
   bd.addEventListener('pointerenter',function(){v=60});
   (function loop(){v*=.92;var t=1+Math.abs(v)/6;rate+=(t-rate)*.08;if(an)an.playbackRate=rate;requestAnimationFrame(loop)})();
+})();
+</script>
+<script>
+(function(){
+  var red=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* underline "доверяют нам" + table bars when visible */
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.4});
+  document.querySelectorAll('.trust,.tbl-wrap').forEach(function(el){io.observe(el)});
+  /* partner tiles: spotlight follows cursor; on touch devices tiles light up one by one */
+  var tiles=[].slice.call(document.querySelectorAll('.pt'));
+  tiles.forEach(function(t){t.addEventListener('pointermove',function(e){var r=t.getBoundingClientRect();t.style.setProperty('--sx',e.clientX-r.left+'px');t.style.setProperty('--sy',e.clientY-r.top+'px')})});
+  if(!red&&tiles.length){var k=0;setInterval(function(){tiles.forEach(function(t){t.classList.remove('lit')});var t=tiles[k%tiles.length];t.style.removeProperty('--sx');t.style.removeProperty('--sy');t.classList.add('lit');k++},1400)}
+  /* leaders carousel: card nearest the centre glows; auto-advance until user touches it */
+  var sc=document.getElementById('lmScroller');if(!sc)return;var cards=[].slice.call(sc.querySelectorAll('.lm-card'));
+  var hov=matchMedia('(hover:hover)').matches;
+  function focus(){if(hov)return;var r=sc.getBoundingClientRect(),c=r.left+r.width*(innerWidth<700?.5:.18),best=null,bd=1e9;
+    cards.forEach(function(el){var b=el.getBoundingClientRect(),d=Math.abs(b.left+b.width/2-c);if(d<bd){bd=d;best=el}});
+    cards.forEach(function(el){el.classList.toggle('focus',el===best)})}
+  sc.addEventListener('scroll',function(){requestAnimationFrame(focus)},{passive:true});focus();
+  var user=false;['pointerdown','wheel','touchstart'].forEach(function(ev){sc.addEventListener(ev,function(){user=true},{passive:true})});
+  document.getElementById('lmPrev').addEventListener('click',function(){user=true});document.getElementById('lmNext').addEventListener('click',function(){user=true});
+  if(!red)setInterval(function(){if(user)return;var vis=sc.getBoundingClientRect();if(vis.bottom<0||vis.top>innerHeight)return;
+    var step=cards[0].getBoundingClientRect().width+14;if(sc.scrollLeft+sc.clientWidth>=sc.scrollWidth-4)sc.scrollTo({left:0,behavior:'smooth'});else sc.scrollBy({left:step,behavior:'smooth'})},3200);
 })();
 </script>
 <script>
