@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs>
+<linearGradient id="c24" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".28" stop-color="#C9D4FF"/><stop offset=".5" stop-color="#3352FF"/><stop offset=".62" stop-color="#1A2AA8"/><stop offset=".85" stop-color="#7F96FF"/><stop offset="1" stop-color="#E6EBFF"/></linearGradient>
+<linearGradient id="j24" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7B90FF"/><stop offset=".55" stop-color="#3352FF"/><stop offset="1" stop-color="#1A2AB0"/></linearGradient>
+<radialGradient id="h24" cx=".35" cy=".25" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+</defs><text x="50" y="76" text-anchor="middle" font-family="Onest, Arial, sans-serif" font-weight="800" font-size="72" letter-spacing="0" textLength="78" lengthAdjust="spacingAndGlyphs" fill="url(#c24)" stroke="#0E1A7A" stroke-width="1.6" paint-order="stroke" style="font-variant-numeric:lining-nums;font-feature-settings:'lnum' 1">PR</text></svg>
